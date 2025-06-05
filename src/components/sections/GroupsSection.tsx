@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -265,11 +266,11 @@ export default function GroupsSection() {
                 <div className="grid grid-cols-2 gap-4 py-4">
                     <div>
                         <label htmlFor="scoreA" className="block text-sm font-medium text-muted-foreground">{getTeamById(editingMatch?.match.teamAId || '')?.name}</label>
-                        <Input id="scoreA" type="number" value={editingMatch?.scoreA} onChange={(e) => setEditingMatch(prev => prev ? {...prev, scoreA: e.target.value} : null)} />
+                        <Input id="scoreA" type="number" value={editingMatch?.scoreA || ''} onChange={(e) => setEditingMatch(prev => prev ? {...prev, scoreA: e.target.value} : null)} />
                     </div>
                     <div>
                         <label htmlFor="scoreB" className="block text-sm font-medium text-muted-foreground">{getTeamById(editingMatch?.match.teamBId || '')?.name}</label>
-                        <Input id="scoreB" type="number" value={editingMatch?.scoreB} onChange={(e) => setEditingMatch(prev => prev ? {...prev, scoreB: e.target.value} : null)} />
+                        <Input id="scoreB" type="number" value={editingMatch?.scoreB || ''} onChange={(e) => setEditingMatch(prev => prev ? {...prev, scoreB: e.target.value} : null)} />
                     </div>
                 </div>
                 <DialogFooter>
