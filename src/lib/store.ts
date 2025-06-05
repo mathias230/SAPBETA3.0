@@ -1,3 +1,4 @@
+
 "use client";
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -234,10 +235,10 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       let newKnockoutStage = { ...state.knockoutStage, rounds: updatedRounds };
 
       if (currentRound && currentRound.matches.every(m => m.played)) {
-        const winners = currentRound.matches.map(m => (m.scoreA! > m.scoreB!) ? m.teamAId : m.teamBId);
-        if (winners.length === 1) { // Champion
+        const winners = currentRound.matches.map(m => (m.scoreA! > m.scoreB!) ? m.teamAId : m.teamBId).filter(id => id !== undefined) as string[];
+        if (winners.length === 1 && currentRound.matches.length === 1) { // Champion from the final match
           newKnockoutStage.championId = winners[0];
-        } else if (winners.length > 1 && currentRoundIndex === updatedRounds.length -1) { // Not yet final round but all played
+        } else if (winners.length > 1 && currentRoundIndex === updatedRounds.length -1) { // Not yet final round but all played in current last round
           const nextRoundName = winners.length === 2 ? "Final" : `Round of ${winners.length}`;
           const nextRoundMatches: Match[] = [];
           for (let i = 0; i < winners.length; i += 2) {
@@ -249,11 +250,16 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
                     played: false,
                     roundName: nextRoundName
                 });
+            } else if (winners.length === 1 && nextRoundMatches.length === 0) { // Only one winner advanced from a previous round, this logic might be redundant if championId above catches it.
+                // This case might mean this winner is the champion if it's the only one left and no more pairs can be formed.
             }
           }
           if(nextRoundMatches.length > 0){
              const nextRound: KnockoutRound = { id: uuidv4(), name: nextRoundName, matches: nextRoundMatches };
              newKnockoutStage.rounds = [...updatedRounds, nextRound];
+          } else if (winners.length === 1 && newKnockoutStage.rounds.flatMap(r => r.matches).filter(m => m.played).length === newKnockoutStage.numTeams -1) {
+            // If one winner left and all matches that lead to this point are played (numTeams - 1 matches for a single elimination bracket)
+            newKnockoutStage.championId = winners[0];
           }
         }
       }
@@ -281,6 +287,8 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       if (match.played && match.scoreA !== undefined && match.scoreB !== undefined) {
         const teamAStanding = standingsMap[match.teamAId];
         const teamBStanding = standingsMap[match.teamBId];
+
+        if (!teamAStanding || !teamBStanding) return; // Safety check
 
         teamAStanding.played++;
         teamBStanding.played++;
@@ -313,10 +321,23 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       if (b.points !== a.points) return b.points - a.points;
       if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
       if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+      // Head-to-head (simplified: not implemented, sort by name as tie-breaker)
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index) => ({ ...s, rank: index + 1 }));
+    }).map((s, index, arr) => {
+      const rank = index + 1;
+      let zoneColor: string | undefined = undefined;
+      
+      if (rank === 1 && arr.length > 1) { // Top team, green
+        zoneColor = 'bg-green-100 dark:bg-green-800/30'; 
+      } else if (rank === 2 && arr.length > 2) { // Second team, blue (if more than 2 teams)
+        zoneColor = 'bg-blue-100 dark:bg-blue-800/30';
+      } else if (rank === arr.length && arr.length > 3 && rank > 2) { // Last team, red (if more than 3 teams and not 1st or 2nd)
+        zoneColor = 'bg-red-100 dark:bg-red-800/30';
+      }
+      return { ...s, rank, zoneColor };
+    });
   },
   getLeagueStandings: () => {
     const league = get().league;
@@ -336,6 +357,8 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       if (match.played && match.scoreA !== undefined && match.scoreB !== undefined) {
         const teamAStanding = standingsMap[match.teamAId];
         const teamBStanding = standingsMap[match.teamBId];
+
+        if (!teamAStanding || !teamBStanding) return; // Safety check
 
         teamAStanding.played++;
         teamBStanding.played++;
@@ -370,7 +393,23 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index) => ({ ...s, rank: index + 1 }));
+    }).map((s, index, arr) => { // Added example zone colors for league too
+      const rank = index + 1;
+      let zoneColor: string | undefined = undefined;
+      // Example: Top 1 gets green
+      if (rank === 1 && arr.length > 1) {
+        zoneColor = 'bg-green-100 dark:bg-green-800/30'; 
+      } 
+      // Example: 2nd place gets blue
+      else if (rank === 2 && arr.length > 2) { 
+        zoneColor = 'bg-blue-100 dark:bg-blue-800/30';
+      }
+      // Example: Last place gets red
+      else if (rank === arr.length && arr.length > 3 && rank > 2) {
+        zoneColor = 'bg-red-100 dark:bg-red-800/30';
+      }
+      return { ...s, rank, zoneColor };
+    });
   },
 });
 
@@ -387,8 +426,4 @@ export const useTournamentStore = create<StoreState>()(
   )
 );
 
-// UUID is not available in browser by default, so we need a simple polyfill or use a library.
-// For this scaffold, I'll use the 'uuid' library. Make sure it's installed: npm install uuid @types/uuid
-// If not using a library, a simple ID generator could be:
-// const simpleId = () => Math.random().toString(36).substring(2, 15);
-// However, uuidv4 is more robust for uniqueness.
+    
