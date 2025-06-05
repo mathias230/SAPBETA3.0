@@ -1,13 +1,13 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTournamentStore } from '@/lib/store';
 import type { Group as GroupType, Team, Match as MatchType, Standing } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, CalendarDays, RefreshCcw, Download, Edit3, Eye } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -16,7 +16,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -44,9 +43,65 @@ export default function GroupsSection() {
   const [selectedGroupIdForTeamAdd, setSelectedGroupIdForTeamAdd] = useState<string | null>(null);
   const [selectedTeamIdForGroupAdd, setSelectedTeamIdForGroupAdd] = useState<string | null>(null);
   const [viewingStandingsGroupId, setViewingStandingsGroupId] = useState<string | null>(null);
-  const [editingMatch, setEditingMatch] = useState<{groupId: string, match: MatchType, scoreA: string, scoreB: string} | null>(null);
+  
+  // State to hold input scores for each match
+  const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Initialize or update matchScoresInput when groups data changes
+    const newFormState: Record<string, { scoreA: string, scoreB: string }> = {};
+    groups.forEach(group => {
+      group.matches.forEach(match => {
+        newFormState[match.id] = {
+          scoreA: match.played && match.scoreA !== undefined ? String(match.scoreA) : '',
+          scoreB: match.played && match.scoreB !== undefined ? String(match.scoreB) : '',
+        };
+      });
+    });
+    setMatchScoresInput(prevScores => {
+      // Merge, allowing existing user inputs for unplayed matches to persist if they were typing
+      const mergedState = {...newFormState};
+      Object.keys(prevScores).forEach(matchId => {
+        const groupMatch = groups.flatMap(g => g.matches).find(m => m.id === matchId);
+        if (groupMatch && !groupMatch.played && (prevScores[matchId].scoreA !== '' || prevScores[matchId].scoreB !== '')) {
+           // If match is unplayed and prevScores has some user input, keep it.
+          mergedState[matchId] = prevScores[matchId];
+        } else if (!groupMatch) {
+           // If match was deleted, remove from local state
+           delete mergedState[matchId];
+        }
+      });
+      return mergedState;
+    });
+  }, [groups]);
+
+  const handleMatchScoreInputChange = (matchId: string, team: 'A' | 'B', value: string) => {
+    setMatchScoresInput(prev => ({
+      ...prev,
+      [matchId]: {
+        ...(prev[matchId] || { scoreA: '', scoreB: '' }),
+        [team === 'A' ? 'scoreA' : 'scoreB']: value,
+      }
+    }));
+  };
+
+  const handleSaveMatchScore = (groupId: string, matchId: string) => {
+    const scores = matchScoresInput[matchId];
+    if (scores && scores.scoreA.trim() !== '' && scores.scoreB.trim() !== '') {
+      const scoreA = parseInt(scores.scoreA);
+      const scoreB = parseInt(scores.scoreB);
+      if (isNaN(scoreA) || isNaN(scoreB) || scoreA < 0 || scoreB < 0) {
+        toast({ title: "Error", description: "Scores must be valid non-negative numbers.", variant: "destructive" });
+        return;
+      }
+      updateGroupMatchScore(groupId, matchId, scoreA, scoreB);
+      toast({ title: "Match Updated", description: "Score has been recorded." });
+    } else {
+      toast({ title: "Error", description: "Please enter both scores.", variant: "destructive" });
+    }
+  };
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) {
@@ -64,23 +119,9 @@ export default function GroupsSection() {
       const group = groups.find(g => g.id === selectedGroupIdForTeamAdd);
       const team = getTeamById(selectedTeamIdForGroupAdd);
       toast({ title: "Team Added to Group", description: `Team "${team?.name}" added to group "${group?.name}".` });
-      setSelectedTeamIdForGroupAdd(null); // Reset for next selection
+      setSelectedTeamIdForGroupAdd(null); 
     } else {
       toast({ title: "Error", description: "Please select a group and a team.", variant: "destructive" });
-    }
-  };
-
-  const handleUpdateMatchScore = () => {
-    if (editingMatch) {
-      const scoreA = parseInt(editingMatch.scoreA);
-      const scoreB = parseInt(editingMatch.scoreB);
-      if (isNaN(scoreA) || isNaN(scoreB)) {
-        toast({ title: "Error", description: "Scores must be numbers.", variant: "destructive" });
-        return;
-      }
-      updateGroupMatchScore(editingMatch.groupId, editingMatch.match.id, scoreA, scoreB);
-      toast({ title: "Match Updated", description: "Score has been recorded." });
-      setEditingMatch(null);
     }
   };
   
@@ -115,16 +156,16 @@ export default function GroupsSection() {
 
         {groups.length === 0 && <p className="text-muted-foreground text-center py-4">No groups created yet.</p>}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
         {groups.map(group => (
-          <Card key={group.id} id={`group-card-${group.id}`}>
+          <Card key={group.id} id={`group-card-${group.id}`} className="flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl">{group.name}</CardTitle>
               {isAdmin && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />Eliminar Grupo
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -144,13 +185,13 @@ export default function GroupsSection() {
                 </AlertDialog>
               )}
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-grow">
               {isAdmin && (
                 <div className="space-y-2 p-3 border rounded-md bg-muted/20">
-                  <h4 className="font-semibold">Add Team to {group.name}</h4>
+                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Equipos en el Grupo</h4>
                   <div className="flex space-x-2">
                     <Select onValueChange={setSelectedTeamIdForGroupAdd} value={selectedTeamIdForGroupAdd || ""}>
-                      <SelectTrigger><SelectValue placeholder="Select team to add" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecciona equipo para añadir" /></SelectTrigger>
                       <SelectContent>
                         {availableTeamsForGroup(group.id).map(team => (
                           <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
@@ -158,19 +199,19 @@ export default function GroupsSection() {
                          {availableTeamsForGroup(group.id).length === 0 && <p className="p-2 text-sm text-muted-foreground">No available teams</p>}
                       </SelectContent>
                     </Select>
-                    <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Add Team</Button>
+                    <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Añadir Equipo</Button>
                   </div>
                 </div>
               )}
               
               <div>
-                <h4 className="font-semibold mb-1 flex items-center"><Users className="mr-2 h-4 w-4" />Teams in {group.name} ({group.teamIds.length})</h4>
+                 <h4 className="font-semibold mb-1 flex items-center"><Users className="mr-2 h-4 w-4" />Teams in {group.name} ({group.teamIds.length})</h4>
                 {group.teamIds.length === 0 ? <p className="text-sm text-muted-foreground">No teams assigned.</p> : (
-                  <ul className="list-disc list-inside pl-1 space-y-1 text-sm">
+                  <ul className="space-y-1 text-sm border rounded-md p-2">
                     {group.teamIds.map(teamId => {
                       const team = getTeamById(teamId);
                       return (
-                        <li key={teamId} className="flex justify-between items-center">
+                        <li key={teamId} className="flex justify-between items-center p-1.5 bg-background rounded hover:bg-muted/30">
                           {team?.name || 'Unknown Team'}
                           {isAdmin && (
                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => { removeTeamFromGroup(group.id, teamId); toast({title: "Team Removed"}); }}>
@@ -191,30 +232,57 @@ export default function GroupsSection() {
               )}
               
               {group.matches.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-1 flex items-center"><CalendarDays className="mr-2 h-4 w-4" />Matches</h4>
-                  <ScrollArea className="h-[200px] border rounded-md p-2">
-                    <ul className="space-y-2 text-sm">
-                      {group.matches.map(match => {
+                <div className="space-y-2 pt-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-semibold flex items-center"><ListOrdered className="mr-2 h-4 w-4 text-primary" />Partidos (Orden Aleatorio)</h4>
+                    {isAdmin && (
+                      <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Matches Re-generated" }); }} className="w-auto" variant="outline" size="sm">
+                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar Partidos
+                      </Button>
+                    )}
+                  </div>
+                  <ScrollArea className="h-[250px] border rounded-md p-0"> {/* Adjusted height and padding */}
+                    <ul className="space-y-0"> {/* Removed space-y-2 for tighter packing */}
+                      {group.matches.map((match, matchIndex) => {
                         const teamA = getTeamById(match.teamAId);
                         const teamB = getTeamById(match.teamBId);
                         return (
-                          <li key={match.id} className="p-2 rounded-md bg-background hover:bg-muted/50">
-                            <div className="flex justify-between items-center">
-                              <span>{teamA?.name || 'TBA'} vs {teamB?.name || 'TBA'}</span>
-                              {match.played ? (
-                                <span className="font-semibold text-primary">{match.scoreA} - {match.scoreB}</span>
-                              ) : <span className="text-xs text-muted-foreground">Pending</span>}
+                          <li key={match.id} className={`p-3 ${matchIndex < group.matches.length - 1 ? 'border-b' : ''} bg-card hover:bg-muted/30`}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="font-medium text-sm">{teamA?.name || 'TBA'} vs {teamB?.name || 'TBA'}</span>
+                              {!isAdmin && match.played && (
+                                <span className="font-semibold text-primary text-sm">{match.scoreA} - {match.scoreB}</span>
+                              )}
+                              {!isAdmin && !match.played && (
+                                <span className="text-xs text-muted-foreground">Pending</span>
+                              )}
                             </div>
-                            {isAdmin && !match.played && (
-                               <Button size="xs" variant="outline" className="mt-1 w-full text-xs" onClick={() => setEditingMatch({groupId: group.id, match, scoreA: '', scoreB: ''})}>
-                                <Edit3 className="mr-1 h-3 w-3"/>Set Score
-                               </Button>
-                            )}
-                            {isAdmin && match.played && (
-                               <Button size="xs" variant="outline" className="mt-1 w-full text-xs" onClick={() => setEditingMatch({groupId: group.id, match, scoreA: String(match.scoreA), scoreB: String(match.scoreB)})}>
-                                <Edit3 className="mr-1 h-3 w-3"/>Edit Score
-                               </Button>
+                            {isAdmin && (
+                              <div className="mt-1 flex items-center space-x-2">
+                                <Input
+                                  type="number"
+                                  placeholder="Res. 1"
+                                  value={matchScoresInput[match.id]?.scoreA ?? ''}
+                                  onChange={(e) => handleMatchScoreInputChange(match.id, 'A', e.target.value)}
+                                  className="w-20 h-8 text-sm"
+                                  min="0"
+                                />
+                                <span>-</span>
+                                <Input
+                                  type="number"
+                                  placeholder="Res. 2"
+                                  value={matchScoresInput[match.id]?.scoreB ?? ''}
+                                  onChange={(e) => handleMatchScoreInputChange(match.id, 'B', e.target.value)}
+                                  className="w-20 h-8 text-sm"
+                                  min="0"
+                                />
+                                <Button size="sm" className="h-8 text-xs px-3" onClick={() => handleSaveMatchScore(group.id, match.id)}>
+                                  <Save className="mr-1 h-3 w-3" /> Guardar
+                                </Button>
+                                {match.played && (
+                                   <span className="text-xs font-semibold text-primary ml-auto">({match.scoreA} - {match.scoreB})</span>
+                                )}
+                              </div>
                             )}
                           </li>
                         );
@@ -224,7 +292,7 @@ export default function GroupsSection() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex-col items-stretch space-y-2">
+            <CardFooter className="flex-col items-stretch space-y-2 mt-auto pt-4"> {/* Added mt-auto and pt-4 */}
                <Button onClick={() => setViewingStandingsGroupId(group.id)} className="w-full" variant="outline">
                  <ListChecks className="mr-2 h-4 w-4"/>View Standings
                </Button>
@@ -236,15 +304,14 @@ export default function GroupsSection() {
         ))}
         </div>
 
-        {/* View Standings Dialog */}
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Standings: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
+              <DialogTitle className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Standings: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
               <DialogDescription>Points, GD, GF, GA calculated automatically.</DialogDescription>
             </DialogHeader>
             {viewingStandingsGroupId && (
-              <div id={`group-standings-${viewingStandingsGroupId}`}>
+              <div id={`group-standings-${viewingStandingsGroupId}`} className="p-1 bg-card rounded-md">
                 <StandingsTable standings={getGroupStandings(viewingStandingsGroupId)} getTeamName={(id) => getTeamById(id)?.name || 'N/A'} />
               </div>
             )}
@@ -254,34 +321,8 @@ export default function GroupsSection() {
           </DialogContent>
         </Dialog>
         
-        {/* Edit Match Score Dialog */}
-        <Dialog open={!!editingMatch} onOpenChange={(isOpen) => !isOpen && setEditingMatch(null)}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Update Match Score</DialogTitle>
-                    <DialogDescription>
-                        {getTeamById(editingMatch?.match.teamAId || '')?.name} vs {getTeamById(editingMatch?.match.teamBId || '')?.name}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-4 py-4">
-                    <div>
-                        <label htmlFor="scoreA" className="block text-sm font-medium text-muted-foreground">{getTeamById(editingMatch?.match.teamAId || '')?.name}</label>
-                        <Input id="scoreA" type="number" value={editingMatch?.scoreA || ''} onChange={(e) => setEditingMatch(prev => prev ? {...prev, scoreA: e.target.value} : null)} />
-                    </div>
-                    <div>
-                        <label htmlFor="scoreB" className="block text-sm font-medium text-muted-foreground">{getTeamById(editingMatch?.match.teamBId || '')?.name}</label>
-                        <Input id="scoreB" type="number" value={editingMatch?.scoreB || ''} onChange={(e) => setEditingMatch(prev => prev ? {...prev, scoreB: e.target.value} : null)} />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setEditingMatch(null)}>Cancel</Button>
-                    <Button onClick={handleUpdateMatchScore}>Save Score</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
       </CardContent>
-      <CardFooter className="text-sm text-muted-foreground">
+      <CardFooter className="text-sm text-muted-foreground border-t pt-4">
         {groups.length} group{groups.length === 1 ? '' : 's'} configured. Define classification zones (e.g., promotion, relegation) with distinct colors in standings.
       </CardFooter>
     </Card>
@@ -299,11 +340,11 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
     return <p className="text-muted-foreground p-4 text-center">No matches played or standings to display.</p>;
   }
   return (
-    <ScrollArea className="max-h-[400px]">
+    <ScrollArea className="max-h-[400px] rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[40px]">#</TableHead>
+            <TableHead className="w-[40px] text-center">#</TableHead>
             <TableHead>Team</TableHead>
             <TableHead className="text-center">P</TableHead>
             <TableHead className="text-center">W</TableHead>
@@ -318,7 +359,7 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
         <TableBody>
           {standings.map((s, index) => (
             <TableRow key={s.teamId} className={s.zoneColor ? s.zoneColor : ''}>
-              <TableCell>{s.rank || index + 1}</TableCell>
+              <TableCell className="text-center">{s.rank || index + 1}</TableCell>
               <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
               <TableCell className="text-center">{s.played}</TableCell>
               <TableCell className="text-center">{s.won}</TableCell>
@@ -335,4 +376,3 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
     </ScrollArea>
   );
 }
-
