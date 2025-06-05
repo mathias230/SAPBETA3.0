@@ -134,7 +134,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     const newZone: ClassificationZone = { ...zoneData, id: uuidv4() };
     set((state: StoreState) => ({
       groups: state.groups.map(g => 
-        g.id === groupId ? { ...g, classificationZones: [...g.classificationZones, newZone] } : g
+        g.id === groupId ? { ...g, classificationZones: [...(g.classificationZones || []), newZone] } : g
       )
     }));
   },
@@ -142,7 +142,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     if (!get().isAdmin) return;
     set((state: StoreState) => ({
       groups: state.groups.map(g => 
-        g.id === groupId ? { ...g, classificationZones: g.classificationZones.filter(z => z.id !== zoneId) } : g
+        g.id === groupId ? { ...g, classificationZones: (g.classificationZones || []).filter(z => z.id !== zoneId) } : g
       )
     }));
   },
@@ -335,8 +335,9 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const rank = index + 1;
       let zoneColorClass: string | undefined = undefined;
       let classificationZoneName: string | undefined = undefined;
-      if (group.classificationZones) {
-        for (const zone of group.classificationZones) {
+      const currentGroup = get().groups.find((g: Group) => g.id === groupId);
+      if (currentGroup && currentGroup.classificationZones) {
+        for (const zone of currentGroup.classificationZones) {
           if (rank >= zone.rankMin && rank <= zone.rankMax) {
             zoneColorClass = zone.colorClass;
             classificationZoneName = zone.name;
@@ -417,3 +418,4 @@ export const useTournamentStore = create<StoreState>()(
     }
   )
 );
+
