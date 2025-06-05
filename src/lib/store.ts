@@ -2,7 +2,7 @@
 "use client";
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { StoreState, Team, Group, League, KnockoutStage, Match, Standing, KnockoutRound } from '@/types';
+import type { StoreState, Team, Group, League, KnockoutStage, Match, Standing, KnockoutRound, ClassificationZone } from '@/types';
 import { ADMIN_PASSWORD } from '@/types';
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 
@@ -59,12 +59,11 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         ...state.league,
         teamIds: state.league.teamIds.filter(teamId => teamId !== id)
       } : null,
-      // Add similar logic for knockout stage if teams are directly referenced by id
     }));
   },
   createGroup: (name: string) => {
     if (!get().isAdmin) return "";
-    const newGroup: Group = { id: uuidv4(), name, teamIds: [], matches: [] };
+    const newGroup: Group = { id: uuidv4(), name, teamIds: [], matches: [], classificationZones: [] };
     set((state: StoreState) => ({ groups: [...state.groups, newGroup] }));
     return newGroup.id;
   },
@@ -106,7 +105,6 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         });
       }
     }
-    // Shuffle matches
     for (let i = matches.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [matches[i], matches[j]] = [matches[j], matches[i]];
@@ -131,7 +129,23 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       })
     }));
   },
-  setGroupClassificationZone: () => { /* Placeholder */ },
+  addGroupClassificationZone: (groupId: string, zoneData: Omit<ClassificationZone, 'id'>) => {
+    if (!get().isAdmin) return;
+    const newZone: ClassificationZone = { ...zoneData, id: uuidv4() };
+    set((state: StoreState) => ({
+      groups: state.groups.map(g => 
+        g.id === groupId ? { ...g, classificationZones: [...g.classificationZones, newZone] } : g
+      )
+    }));
+  },
+  removeGroupClassificationZone: (groupId: string, zoneId: string) => {
+    if (!get().isAdmin) return;
+    set((state: StoreState) => ({
+      groups: state.groups.map(g => 
+        g.id === groupId ? { ...g, classificationZones: g.classificationZones.filter(z => z.id !== zoneId) } : g
+      )
+    }));
+  },
   setupLeague: (name: string, teamIds: string[], rounds: 1 | 2) => {
     if (!get().isAdmin) return;
     const newLeague: League = { id: uuidv4(), name, teamIds, matches: [], settings: { rounds } };
@@ -159,14 +173,13 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         if (league.settings.rounds === 2) {
           matches.push({
             id: uuidv4(),
-            teamAId: league.teamIds[j], // Swap for return leg
+            teamAId: league.teamIds[j], 
             teamBId: league.teamIds[i],
             played: false,
           });
         }
       }
     }
-     // Shuffle matches
     for (let i = matches.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [matches[i], matches[j]] = [matches[j], matches[i]];
@@ -189,7 +202,6 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
   setLeagueClassificationZone: () => { /* Placeholder */ },
   setupKnockoutStage: (name: string, numTeams: number, teamIds: string[]) => {
     if (!get().isAdmin) return;
-    // Basic setup, actual bracket generation is complex
     const initialRoundName = numTeams === 2 ? "Final" : numTeams === 4 ? "Semi Finals" : numTeams === 8 ? "Quarter Finals" : `Round of ${numTeams}`;
     const initialMatches: Match[] = [];
     for(let i = 0; i < teamIds.length / 2; i++) {
@@ -210,7 +222,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     set({ knockoutStage: null });
   },
   updateKnockoutMatchScore: (roundId: string, matchId: string, scoreA: number, scoreB: number) => {
-    if (!get().isAdmin || scoreA === scoreB) return; // No draws in knockout
+    if (!get().isAdmin || scoreA === scoreB) return; 
     const winnerId = scoreA > scoreB ? get().knockoutStage?.rounds.find(r => r.id === roundId)?.matches.find(m => m.id === matchId)?.teamAId : get().knockoutStage?.rounds.find(r => r.id === roundId)?.matches.find(m => m.id === matchId)?.teamBId;
 
     set((state: StoreState) => {
@@ -228,21 +240,19 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         return round;
       });
 
-      // Auto-advance logic (simplified)
-      // This needs to be more robust: check if all matches in a round are played, then create next round.
       const currentRoundIndex = updatedRounds.findIndex(r => r.id === roundId);
       const currentRound = updatedRounds[currentRoundIndex];
       let newKnockoutStage = { ...state.knockoutStage, rounds: updatedRounds };
 
       if (currentRound && currentRound.matches.every(m => m.played)) {
         const winners = currentRound.matches.map(m => (m.scoreA! > m.scoreB!) ? m.teamAId : m.teamBId).filter(id => id !== undefined) as string[];
-        if (winners.length === 1 && currentRound.matches.length === 1) { // Champion from the final match
+        if (winners.length === 1 && currentRound.matches.length === 1) { 
           newKnockoutStage.championId = winners[0];
-        } else if (winners.length > 1 && currentRoundIndex === updatedRounds.length -1) { // Not yet final round but all played in current last round
+        } else if (winners.length > 1 && currentRoundIndex === updatedRounds.length -1) { 
           const nextRoundName = winners.length === 2 ? "Final" : `Round of ${winners.length}`;
           const nextRoundMatches: Match[] = [];
           for (let i = 0; i < winners.length; i += 2) {
-            if (winners[i+1]) { // Ensure pairs
+            if (winners[i+1]) { 
                  nextRoundMatches.push({
                     id: uuidv4(),
                     teamAId: winners[i],
@@ -250,15 +260,12 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
                     played: false,
                     roundName: nextRoundName
                 });
-            } else if (winners.length === 1 && nextRoundMatches.length === 0) { // Only one winner advanced from a previous round, this logic might be redundant if championId above catches it.
-                // This case might mean this winner is the champion if it's the only one left and no more pairs can be formed.
             }
           }
           if(nextRoundMatches.length > 0){
              const nextRound: KnockoutRound = { id: uuidv4(), name: nextRoundName, matches: nextRoundMatches };
              newKnockoutStage.rounds = [...updatedRounds, nextRound];
           } else if (winners.length === 1 && newKnockoutStage.rounds.flatMap(r => r.matches).filter(m => m.played).length === newKnockoutStage.numTeams -1) {
-            // If one winner left and all matches that lead to this point are played (numTeams - 1 matches for a single elimination bracket)
             newKnockoutStage.championId = winners[0];
           }
         }
@@ -288,7 +295,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         const teamAStanding = standingsMap[match.teamAId];
         const teamBStanding = standingsMap[match.teamBId];
 
-        if (!teamAStanding || !teamBStanding) return; // Safety check
+        if (!teamAStanding || !teamBStanding) return;
 
         teamAStanding.played++;
         teamBStanding.played++;
@@ -321,11 +328,24 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       if (b.points !== a.points) return b.points - a.points;
       if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
       if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-      // Head-to-head (simplified: not implemented, sort by name as tie-breaker)
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index) => ({ ...s, rank: index + 1 })); // Removed example zoneColor logic
+    }).map((s, index) => {
+      const rank = index + 1;
+      let zoneColorClass: string | undefined = undefined;
+      let classificationZoneName: string | undefined = undefined;
+      if (group.classificationZones) {
+        for (const zone of group.classificationZones) {
+          if (rank >= zone.rankMin && rank <= zone.rankMax) {
+            zoneColorClass = zone.colorClass;
+            classificationZoneName = zone.name;
+            break; 
+          }
+        }
+      }
+      return { ...s, rank, zoneColorClass, classificationZoneName };
+    });
   },
   getLeagueStandings: () => {
     const league = get().league;
@@ -346,7 +366,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         const teamAStanding = standingsMap[match.teamAId];
         const teamBStanding = standingsMap[match.teamBId];
 
-        if (!teamAStanding || !teamBStanding) return; // Safety check
+        if (!teamAStanding || !teamBStanding) return;
 
         teamAStanding.played++;
         teamBStanding.played++;
@@ -381,7 +401,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index) => ({ ...s, rank: index + 1 })); // Removed example zoneColor logic
+    }).map((s, index) => ({ ...s, rank: index + 1 }));
   },
 });
 
@@ -397,5 +417,3 @@ export const useTournamentStore = create<StoreState>()(
     }
   )
 );
-
-    

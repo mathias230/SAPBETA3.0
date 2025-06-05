@@ -3,11 +3,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTournamentStore } from '@/lib/store';
-import type { Group as GroupType, Team, Match as MatchType, Standing } from '@/types';
+import type { Group as GroupType, Team, Match as MatchType, Standing, ClassificationZone } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette, Settings, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -16,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -33,24 +35,38 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
 
+const classificationColorOptions = [
+  { label: "Green (e.g., Promotion)", value: "bg-green-200/70 dark:bg-green-700/40" },
+  { label: "Blue (e.g., Play-off)", value: "bg-blue-200/70 dark:bg-blue-700/40" },
+  { label: "Yellow (e.g., Warning)", value: "bg-yellow-200/70 dark:bg-yellow-700/40" },
+  { label: "Red (e.g., Relegation)", value: "bg-red-200/70 dark:bg-red-700/40" },
+  { label: "Purple (e.g., Special)", value: "bg-purple-200/70 dark:bg-purple-700/40" },
+  { label: "Gray (e.g., Neutral)", value: "bg-gray-300/70 dark:bg-gray-600/40" },
+];
+
 export default function GroupsSection() {
   const { 
     groups, teams, isAdmin, createGroup, deleteGroup, addTeamToGroup, removeTeamFromGroup, 
-    generateGroupMatches, updateGroupMatchScore, getTeamById, getGroupStandings 
+    generateGroupMatches, updateGroupMatchScore, getTeamById, getGroupStandings,
+    addGroupClassificationZone, removeGroupClassificationZone
   } = useTournamentStore();
   
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedGroupIdForTeamAdd, setSelectedGroupIdForTeamAdd] = useState<string | null>(null);
   const [selectedTeamIdForGroupAdd, setSelectedTeamIdForGroupAdd] = useState<string | null>(null);
   const [viewingStandingsGroupId, setViewingStandingsGroupId] = useState<string | null>(null);
-  
-  // State to hold input scores for each match
   const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
+  
+  const [isDefineZoneModalOpen, setIsDefineZoneModalOpen] = useState(false);
+  const [selectedGroupForZones, setSelectedGroupForZones] = useState<GroupType | null>(null);
+  const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneMinRank, setNewZoneMinRank] = useState('');
+  const [newZoneMaxRank, setNewZoneMaxRank] = useState('');
+  const [newZoneColorClass, setNewZoneColorClass] = useState(classificationColorOptions[0].value);
   
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize or update matchScoresInput when groups data changes
     const newFormState: Record<string, { scoreA: string, scoreB: string }> = {};
     groups.forEach(group => {
       group.matches.forEach(match => {
@@ -61,15 +77,12 @@ export default function GroupsSection() {
       });
     });
     setMatchScoresInput(prevScores => {
-      // Merge, allowing existing user inputs for unplayed matches to persist if they were typing
       const mergedState = {...newFormState};
       Object.keys(prevScores).forEach(matchId => {
         const groupMatch = groups.flatMap(g => g.matches).find(m => m.id === matchId);
         if (groupMatch && !groupMatch.played && (prevScores[matchId].scoreA !== '' || prevScores[matchId].scoreB !== '')) {
-           // If match is unplayed and prevScores has some user input, keep it.
           mergedState[matchId] = prevScores[matchId];
         } else if (!groupMatch) {
-           // If match was deleted, remove from local state
            delete mergedState[matchId];
         }
       });
@@ -108,7 +121,7 @@ export default function GroupsSection() {
       toast({ title: "Error", description: "Group name cannot be empty.", variant: "destructive" });
       return;
     }
-    const newId = createGroup(newGroupName.trim());
+    createGroup(newGroupName.trim());
     toast({ title: "Group Created", description: `Group "${newGroupName.trim()}" has been created.` });
     setNewGroupName('');
   };
@@ -130,6 +143,60 @@ export default function GroupsSection() {
     if (!group) return teams;
     return teams.filter(team => !group.teamIds.includes(team.id));
   };
+
+  const handleOpenDefineZoneModal = (group: GroupType) => {
+    setSelectedGroupForZones(group);
+    setIsDefineZoneModalOpen(true);
+    // Reset form fields
+    setNewZoneName('');
+    setNewZoneMinRank('');
+    setNewZoneMaxRank('');
+    setNewZoneColorClass(classificationColorOptions[0].value);
+  };
+
+  const handleAddClassificationZone = () => {
+    if (!selectedGroupForZones) return;
+    const rankMin = parseInt(newZoneMinRank);
+    const rankMax = parseInt(newZoneMaxRank);
+
+    if (!newZoneName.trim()) {
+      toast({ title: "Error", description: "Zone name cannot be empty.", variant: "destructive" }); return;
+    }
+    if (isNaN(rankMin) || rankMin <= 0) {
+      toast({ title: "Error", description: "Min Rank must be a positive number.", variant: "destructive" }); return;
+    }
+    if (isNaN(rankMax) || rankMax <= 0) {
+      toast({ title: "Error", description: "Max Rank must be a positive number.", variant: "destructive" }); return;
+    }
+    if (rankMin > rankMax) {
+      toast({ title: "Error", description: "Min Rank cannot be greater than Max Rank.", variant: "destructive" }); return;
+    }
+
+    addGroupClassificationZone(selectedGroupForZones.id, {
+      name: newZoneName.trim(),
+      rankMin,
+      rankMax,
+      colorClass: newZoneColorClass,
+    });
+    toast({ title: "Classification Zone Added", description: `Zone "${newZoneName.trim()}" created.` });
+    // Reset form after adding
+    setNewZoneName('');
+    setNewZoneMinRank('');
+    setNewZoneMaxRank('');
+    setNewZoneColorClass(classificationColorOptions[0].value);
+    // Refresh the selected group data to show the new zone in the modal
+    const updatedGroup = groups.find(g => g.id === selectedGroupForZones.id);
+    if (updatedGroup) setSelectedGroupForZones(updatedGroup);
+  };
+
+  const handleRemoveClassificationZone = (groupId: string, zoneId: string) => {
+    removeGroupClassificationZone(groupId, zoneId);
+    toast({ title: "Classification Zone Removed" });
+     // Refresh the selected group data to show the new zone in the modal
+    const updatedGroup = groups.find(g => g.id === selectedGroupForZones?.id);
+    if (updatedGroup) setSelectedGroupForZones(updatedGroup);
+  };
+
 
   return (
     <Card className="shadow-lg">
@@ -241,8 +308,8 @@ export default function GroupsSection() {
                       </Button>
                     )}
                   </div>
-                  <ScrollArea className="h-[250px] border rounded-md p-0"> {/* Adjusted height and padding */}
-                    <ul className="space-y-0"> {/* Removed space-y-2 for tighter packing */}
+                  <ScrollArea className="h-[250px] border rounded-md p-0">
+                    <ul className="space-y-0">
                       {group.matches.map((match, matchIndex) => {
                         const teamA = getTeamById(match.teamAId);
                         const teamB = getTeamById(match.teamBId);
@@ -292,13 +359,13 @@ export default function GroupsSection() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex-col items-stretch space-y-2 mt-auto pt-4"> {/* Added mt-auto and pt-4 */}
+            <CardFooter className="flex-col items-stretch space-y-2 mt-auto pt-4">
                <Button onClick={() => setViewingStandingsGroupId(group.id)} className="w-full" variant="outline">
                  <ListChecks className="mr-2 h-4 w-4"/>View Standings
                </Button>
                {isAdmin && (
-                <Button variant="outline" className="w-full" disabled>
-                  <Palette className="mr-2 h-4 w-4" /> Define Classification Zones (Soon)
+                <Button variant="outline" className="w-full" onClick={() => handleOpenDefineZoneModal(group)}>
+                  <Palette className="mr-2 h-4 w-4" /> Define Classification Zones
                 </Button>
                )}
                 <Button onClick={() => exportElementAsPNG(`group-standings-${group.id}`, `${group.name}-standings.png`)} className="w-full" variant="outline" disabled={getGroupStandings(group.id).length === 0}>
@@ -313,7 +380,7 @@ export default function GroupsSection() {
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Standings: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
-              <DialogDescription>Points, GD, GF, GA calculated automatically.</DialogDescription>
+              <DialogDescription>Points, GD, GF, GA calculated automatically. Classification zones are highlighted.</DialogDescription>
             </DialogHeader>
             {viewingStandingsGroupId && (
               <div id={`group-standings-${viewingStandingsGroupId}`} className="p-1 bg-card rounded-md">
@@ -325,10 +392,93 @@ export default function GroupsSection() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {isAdmin && selectedGroupForZones && (
+          <Dialog open={isDefineZoneModalOpen} onOpenChange={setIsDefineZoneModalOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Define Classification Zones for {selectedGroupForZones.name}</DialogTitle>
+                <DialogDescription>Set rank ranges and colors for different classification zones.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2 p-3 border rounded-md">
+                  <h4 className="font-semibold text-sm">Current Zones</h4>
+                  {selectedGroupForZones.classificationZones.length === 0 && <p className="text-xs text-muted-foreground">No zones defined yet.</p>}
+                  <ul className="space-y-1">
+                    {selectedGroupForZones.classificationZones.map(zone => (
+                      <li key={zone.id} className={`flex items-center justify-between p-2 rounded-md text-xs ${zone.colorClass}`}>
+                        <span>{zone.name} (Ranks {zone.rankMin}-{zone.rankMax})</span>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive-foreground hover:bg-destructive/80">
+                               <X className="h-3 w-3" />
+                             </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Zone: {zone.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleRemoveClassificationZone(selectedGroupForZones.id, zone.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete Zone
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="space-y-3 p-3 border rounded-md">
+                  <h4 className="font-semibold text-sm">Add New Zone</h4>
+                  <div>
+                    <Label htmlFor="zoneName">Zone Name</Label>
+                    <Input id="zoneName" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="e.g., Promotion, Relegation" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="minRank">Min Rank</Label>
+                      <Input id="minRank" type="number" value={newZoneMinRank} onChange={e => setNewZoneMinRank(e.target.value)} placeholder="e.g., 1" min="1" />
+                    </div>
+                    <div>
+                      <Label htmlFor="maxRank">Max Rank</Label>
+                      <Input id="maxRank" type="number" value={newZoneMaxRank} onChange={e => setNewZoneMaxRank(e.target.value)} placeholder="e.g., 3" min="1" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="zoneColor">Color</Label>
+                    <Select value={newZoneColorClass} onValueChange={setNewZoneColorClass}>
+                      <SelectTrigger id="zoneColor"><SelectValue placeholder="Select color" /></SelectTrigger>
+                      <SelectContent>
+                        {classificationColorOptions.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            <div className="flex items-center">
+                              <span className={`w-3 h-3 rounded-sm mr-2 ${opt.value}`}></span>
+                              {opt.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={handleAddClassificationZone} className="w-full"><PlusCircle className="mr-2 h-4 w-4" />Add Zone</Button>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Done</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
         
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground border-t pt-4">
-        {groups.length} group{groups.length === 1 ? '' : 's'} configured. Define classification zones (e.g., promotion, relegation) with distinct colors in standings.
+        {groups.length} group{groups.length === 1 ? '' : 's'} configured. 
+        {isAdmin && " Define classification zones for standings in each group."}
       </CardFooter>
     </Card>
   );
@@ -363,7 +513,7 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
         </TableHeader>
         <TableBody>
           {standings.map((s, index) => (
-            <TableRow key={s.teamId} className={s.zoneColor ? s.zoneColor : ''}>
+            <TableRow key={s.teamId} className={s.zoneColorClass ? `${s.zoneColorClass} transition-colors duration-300` : ''}>
               <TableCell className="text-center font-medium">{(s.rank || index + 1)}.</TableCell>
               <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
               <TableCell className="text-center">{s.played}</TableCell>
@@ -381,6 +531,3 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
     </ScrollArea>
   );
 }
-
-
-    

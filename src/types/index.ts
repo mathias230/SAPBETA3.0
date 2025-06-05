@@ -1,3 +1,4 @@
+
 export interface Team {
   id: string;
   name: string;
@@ -13,6 +14,14 @@ export interface Match {
   played: boolean;
 }
 
+export interface ClassificationZone {
+  id: string;
+  name: string;
+  rankMin: number;
+  rankMax: number;
+  colorClass: string; // Tailwind CSS class, e.g., "bg-green-200 dark:bg-green-800/60"
+}
+
 export interface Standing {
   teamId: string;
   played: number;
@@ -24,8 +33,8 @@ export interface Standing {
   goalDifference: number;
   points: number;
   rank?: number;
-  classificationZone?: string;
-  zoneColor?: string; 
+  classificationZoneName?: string; // Name of the zone, e.g., "Promotion"
+  zoneColorClass?: string; // Tailwind CSS class for background color
 }
 
 export interface Group {
@@ -33,6 +42,7 @@ export interface Group {
   name: string;
   teamIds: string[];
   matches: Match[];
+  classificationZones: ClassificationZone[];
 }
 
 export interface League {
@@ -43,6 +53,7 @@ export interface League {
   settings: {
     rounds: 1 | 2; 
   };
+  // classificationZones for league can be added similarly if needed
 }
 
 export interface KnockoutRound {
@@ -92,7 +103,8 @@ export interface TournamentActions {
   removeTeamFromGroup: (groupId: string, teamId: string) => void;
   generateGroupMatches: (groupId: string) => void;
   updateGroupMatchScore: (groupId: string, matchId: string, scoreA: number, scoreB: number) => void;
-  setGroupClassificationZone: (groupId: string, rank: number, zone: string, color: string) => void; // Placeholder
+  addGroupClassificationZone: (groupId: string, zone: Omit<ClassificationZone, 'id'>) => void;
+  removeGroupClassificationZone: (groupId: string, zoneId: string) => void;
 
   // League
   setupLeague: (name: string, teamIds: string[], rounds: 1 | 2) => void;
