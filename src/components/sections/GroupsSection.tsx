@@ -7,7 +7,7 @@ import type { Group as GroupType, Team, Match as MatchType, Standing } from '@/t
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -296,6 +296,11 @@ export default function GroupsSection() {
                <Button onClick={() => setViewingStandingsGroupId(group.id)} className="w-full" variant="outline">
                  <ListChecks className="mr-2 h-4 w-4"/>View Standings
                </Button>
+               {isAdmin && (
+                <Button variant="outline" className="w-full" disabled>
+                  <Palette className="mr-2 h-4 w-4" /> Define Classification Zones (Soon)
+                </Button>
+               )}
                 <Button onClick={() => exportElementAsPNG(`group-standings-${group.id}`, `${group.name}-standings.png`)} className="w-full" variant="outline" disabled={getGroupStandings(group.id).length === 0}>
                   <Download className="mr-2 h-4 w-4" />Export Standings PNG
                 </Button>
@@ -377,3 +382,5 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
   );
 }
 
+
+    
