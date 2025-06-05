@@ -403,9 +403,9 @@ export default function GroupsSection() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2 p-3 border rounded-md">
                   <h4 className="font-semibold text-sm">Current Zones</h4>
-                  {selectedGroupForZones.classificationZones.length === 0 && <p className="text-xs text-muted-foreground">No zones defined yet.</p>}
+                  {(selectedGroupForZones.classificationZones || []).length === 0 && <p className="text-xs text-muted-foreground">No zones defined yet.</p>}
                   <ul className="space-y-1">
-                    {selectedGroupForZones.classificationZones.map(zone => (
+                    {(selectedGroupForZones.classificationZones || []).map(zone => (
                       <li key={zone.id} className={`flex items-center justify-between p-2 rounded-md text-xs ${zone.colorClass}`}>
                         <span>{zone.name} (Ranks {zone.rankMin}-{zone.rankMax})</span>
                         <AlertDialog>
@@ -531,3 +531,4 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
     </ScrollArea>
   );
 }
+
