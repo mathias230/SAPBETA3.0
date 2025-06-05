@@ -325,19 +325,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index, arr) => {
-      const rank = index + 1;
-      let zoneColor: string | undefined = undefined;
-      
-      if (rank === 1 && arr.length > 1) { // Top team, green
-        zoneColor = 'bg-green-100 dark:bg-green-800/30'; 
-      } else if (rank === 2 && arr.length > 2) { // Second team, blue (if more than 2 teams)
-        zoneColor = 'bg-blue-100 dark:bg-blue-800/30';
-      } else if (rank === arr.length && arr.length > 3 && rank > 2) { // Last team, red (if more than 3 teams and not 1st or 2nd)
-        zoneColor = 'bg-red-100 dark:bg-red-800/30';
-      }
-      return { ...s, rank, zoneColor };
-    });
+    }).map((s, index) => ({ ...s, rank: index + 1 })); // Removed example zoneColor logic
   },
   getLeagueStandings: () => {
     const league = get().league;
@@ -393,23 +381,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index, arr) => { // Added example zone colors for league too
-      const rank = index + 1;
-      let zoneColor: string | undefined = undefined;
-      // Example: Top 1 gets green
-      if (rank === 1 && arr.length > 1) {
-        zoneColor = 'bg-green-100 dark:bg-green-800/30'; 
-      } 
-      // Example: 2nd place gets blue
-      else if (rank === 2 && arr.length > 2) { 
-        zoneColor = 'bg-blue-100 dark:bg-blue-800/30';
-      }
-      // Example: Last place gets red
-      else if (rank === arr.length && arr.length > 3 && rank > 2) {
-        zoneColor = 'bg-red-100 dark:bg-red-800/30';
-      }
-      return { ...s, rank, zoneColor };
-    });
+    }).map((s, index) => ({ ...s, rank: index + 1 })); // Removed example zoneColor logic
   },
 });
 

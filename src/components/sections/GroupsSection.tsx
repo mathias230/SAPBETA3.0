@@ -359,7 +359,7 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
         <TableBody>
           {standings.map((s, index) => (
             <TableRow key={s.teamId} className={s.zoneColor ? s.zoneColor : ''}>
-              <TableCell className="text-center">{s.rank || index + 1}</TableCell>
+              <TableCell className="text-center font-medium">{(s.rank || index + 1)}.</TableCell>
               <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
               <TableCell className="text-center">{s.played}</TableCell>
               <TableCell className="text-center">{s.won}</TableCell>
@@ -376,3 +376,4 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
     </ScrollArea>
   );
 }
+
