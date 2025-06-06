@@ -67,14 +67,14 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
             <TableRow>
               <TableHead className="text-center w-20 px-2 py-3">#</TableHead>
               <TableHead className="px-3 py-3">Equipo</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">PJ</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">G</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">E</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">P</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">GF</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">GC</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">DG</TableHead>
-              <TableHead className="text-center w-12 px-1 py-3">Pts</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">PJ</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">G</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">E</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">P</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">GF</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">GC</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">DG</TableHead>
+              <TableHead className="text-center w-12 px-2 py-3">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -92,14 +92,14 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
                   </span>
                 </TableCell>
                 <TableCell className="font-medium px-3 py-3">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.played}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.won}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.drawn}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.lost}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.goalsFor}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center px-1 py-3">{s.goalDifference}</TableCell>
-                <TableCell className="text-center font-semibold px-1 py-3">{s.points}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.played}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.won}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.drawn}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.lost}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.goalsFor}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center px-2 py-3">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-semibold px-2 py-3">{s.points}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -109,7 +109,7 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
         <div className="mt-4 p-3 border rounded-md space-y-1 text-xs text-muted-foreground">
           <h4 className="font-semibold text-sm text-foreground mb-1.5">Leyenda de Zonas:</h4>
           {activeZones.map(zone => (
-            <div key={zone.id} className="flex items-center py-0.5">
+            <div key={zone.id} className="flex items-center py-1">
               <span className={`w-3 h-3 rounded-sm mr-2 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
               <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
             </div>
@@ -455,10 +455,10 @@ export default function GroupsSection() {
         </div>
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl">
             <DialogHeader className="flex flex-row justify-between items-start pr-6 pb-4 border-b mb-4">
-                <div>
-                    <DialogTitle className="flex items-center text-xl mb-1">
+                <div className="space-y-1">
+                    <DialogTitle className="flex items-center text-xl">
                         <ListChecks className="mr-2 h-5 w-5 text-primary" />
                         Clasificación: {viewingGroup?.name}
                     </DialogTitle>
@@ -616,8 +616,3 @@ export default function GroupsSection() {
     </Card>
   );
 }
-
-
-    
-
-    
