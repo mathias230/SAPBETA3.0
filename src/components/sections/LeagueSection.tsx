@@ -255,7 +255,7 @@ export default function LeagueSection() {
           {isAdmin && (
             <div className="flex space-x-2">
                  <Button variant="outline" size="sm" onClick={() => setIsDefineZoneModalOpen(true)}>
-                    <Palette className="mr-1 h-4 w-4" />Zonas
+                    <Palette className="mr-1 h-4 w-4" />Zonas de Clasificación
                 </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -287,14 +287,14 @@ export default function LeagueSection() {
               <CardTitle className="text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Partidos</CardTitle>
               {isAdmin && (
                     <Button onClick={() => { generateLeagueMatches(); toast({ title: "Partidos Re-generados" }); }} className="w-auto" variant="outline" size="sm">
-                      <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar
+                      <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar Partidos
                   </Button>
               )}
           </div>
         </CardHeader>
         <CardContent>
           {league.matches.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay partidos generados.</p> : (
-            <ScrollArea className="h-[400px] border rounded-md p-0 md:h-[calc(100vh-450px)]"> {/* Adjusted height */}
+            <ScrollArea className="h-[400px] border rounded-md p-0 md:h-[calc(100vh-450px)]">
               <ul className="space-y-0">
                 {league.matches.map((match, matchIndex) => {
                   const teamA = getTeamById(match.teamAId);
@@ -314,7 +314,7 @@ export default function LeagueSection() {
                         <div className="mt-1 flex items-center space-x-2">
                           <Input
                             type="number"
-                            placeholder="Res. 1"
+                            placeholder="Res. A"
                             value={matchScoresInput[match.id]?.scoreA ?? ''}
                             onChange={(e) => handleMatchScoreInputChange(match.id, 'A', e.target.value)}
                             className="w-20 h-8 text-sm"
@@ -323,7 +323,7 @@ export default function LeagueSection() {
                           <span>-</span>
                           <Input
                             type="number"
-                            placeholder="Res. 2"
+                            placeholder="Res. B"
                             value={matchScoresInput[match.id]?.scoreB ?? ''}
                             onChange={(e) => handleMatchScoreInputChange(match.id, 'B', e.target.value)}
                             className="w-20 h-8 text-sm"
@@ -346,11 +346,11 @@ export default function LeagueSection() {
         </CardContent>
       </Card>
 
-      <Card className="w-full shadow-md mt-6"> {/* Added mt-6 for spacing */}
+      <Card className="w-full shadow-md mt-6">
         <CardHeader>
           <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Clasificación</CardTitle>
         </CardHeader>
-        <CardContent id="league-standings-export" className="p-1 bg-card rounded-md">
+        <CardContent id="league-standings-export" className="bg-card rounded-md">
           <StandingsTable 
               standings={leagueStandings} 
               getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
@@ -432,7 +432,7 @@ export default function LeagueSection() {
                         {classificationColorOptions.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>
                             <div className="flex items-center">
-                              <span className={`w-3 h-3 rounded-sm mr-2 ${opt.value.split(' ')[0]}`}></span>
+                              <span className={`w-3 h-3 rounded-sm mr-2 border border-foreground/20 ${opt.value.split(' ')[0]}`}></span>
                               {opt.label}
                             </div>
                           </SelectItem>
