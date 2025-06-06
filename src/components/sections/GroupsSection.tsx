@@ -232,7 +232,7 @@ export default function GroupsSection() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />Eliminar Grupo
+                      <Trash2 className="mr-2 h-4 w-4" />Delete Group
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -255,10 +255,10 @@ export default function GroupsSection() {
             <CardContent className="space-y-4 flex-grow">
               {isAdmin && (
                 <div className="space-y-2 p-3 border rounded-md bg-muted/20">
-                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Equipos en el Grupo</h4>
+                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Teams in Group</h4>
                   <div className="flex space-x-2">
                     <Select onValueChange={setSelectedTeamIdForGroupAdd} value={selectedTeamIdForGroupAdd || ""}>
-                      <SelectTrigger><SelectValue placeholder="Selecciona equipo para añadir" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select team to add" /></SelectTrigger>
                       <SelectContent>
                         {availableTeamsForGroup(group.id).map(team => (
                           <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
@@ -266,7 +266,7 @@ export default function GroupsSection() {
                          {availableTeamsForGroup(group.id).length === 0 && <p className="p-2 text-sm text-muted-foreground">No available teams</p>}
                       </SelectContent>
                     </Select>
-                    <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Añadir Equipo</Button>
+                    <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Add Team</Button>
                   </div>
                 </div>
               )}
@@ -301,10 +301,10 @@ export default function GroupsSection() {
               {group.matches.length > 0 && (
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-semibold flex items-center"><ListOrdered className="mr-2 h-4 w-4 text-primary" />Partidos (Orden Aleatorio)</h4>
+                    <h4 className="font-semibold flex items-center"><ListOrdered className="mr-2 h-4 w-4 text-primary" />Matches (Random Order)</h4>
                     {isAdmin && (
                       <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Matches Re-generated" }); }} className="w-auto" variant="outline" size="sm">
-                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar Partidos
+                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generate Matches
                       </Button>
                     )}
                   </div>
@@ -344,7 +344,7 @@ export default function GroupsSection() {
                                   min="0"
                                 />
                                 <Button size="sm" className="h-8 text-xs px-3" onClick={() => handleSaveMatchScore(group.id, match.id)}>
-                                  <Save className="mr-1 h-3 w-3" /> Guardar
+                                  <Save className="mr-1 h-3 w-3" /> Save
                                 </Button>
                                 {match.played && (
                                    <span className="text-xs font-semibold text-primary ml-auto">({match.scoreA} - {match.scoreB})</span>
@@ -513,8 +513,18 @@ function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
         </TableHeader>
         <TableBody>
           {standings.map((s, index) => (
-            <TableRow key={s.teamId} className={s.zoneColorClass ? `${s.zoneColorClass} transition-colors duration-300` : ''}>
-              <TableCell className="text-center font-medium">{(s.rank || index + 1)}.</TableCell>
+            <TableRow key={s.teamId}>
+              <TableCell className="text-center font-medium relative">
+                {s.zoneColorClass && (
+                  <div
+                    className={`absolute left-1 top-1 bottom-1 w-1 rounded-sm ${s.zoneColorClass}`}
+                    title={s.classificationZoneName || 'Classification Zone'}
+                  ></div>
+                )}
+                <span className={s.zoneColorClass ? "ml-3" : ""}>
+                  {(s.rank || index + 1)}.
+                </span>
+              </TableCell>
               <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
               <TableCell className="text-center">{s.played}</TableCell>
               <TableCell className="text-center">{s.won}</TableCell>
