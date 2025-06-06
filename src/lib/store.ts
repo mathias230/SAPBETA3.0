@@ -1,10 +1,11 @@
 
+
 "use client";
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { StoreState, Team, Group, League, KnockoutStage, Match, Standing, KnockoutRound, ClassificationZone } from '@/types';
 import { ADMIN_PASSWORD } from '@/types';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { v4 as uuidv4 } from 'uuid'; 
 
 const initialState: Omit<StoreState, keyofReturnType<typeof tournamentActions>> = {
   teams: [],
@@ -53,11 +54,25 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       teams: state.teams.filter((team) => team.id !== id),
       groups: state.groups.map(group => ({
         ...group,
-        teamIds: group.teamIds.filter(teamId => teamId !== id)
+        teamIds: group.teamIds.filter(teamId => teamId !== id),
+        matches: group.matches.filter(match => match.teamAId !== id && match.teamBId !== id)
       })),
       league: state.league ? {
         ...state.league,
-        teamIds: state.league.teamIds.filter(teamId => teamId !== id)
+        teamIds: state.league.teamIds.filter(teamId => teamId !== id),
+        matches: state.league.matches.filter(match => match.teamAId !== id && match.teamBId !== id)
+      } : null,
+      knockoutStage: state.knockoutStage ? {
+        ...state.knockoutStage,
+        teamIds: state.knockoutStage.teamIds.filter(teamId => teamId !== id),
+        rounds: state.knockoutStage.rounds.map(round => ({
+            ...round,
+            matches: round.matches.map(match => {
+                if (match.teamAId === id) return {...match, teamAId: 'TBD_DELETED'};
+                if (match.teamBId === id) return {...match, teamBId: 'TBD_DELETED'};
+                return match;
+            }).filter(match => !(match.teamAId === 'TBD_DELETED' && match.teamBId === 'TBD_DELETED'))
+        }))
       } : null,
     }));
   },
@@ -148,7 +163,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
   },
   setupLeague: (name: string, teamIds: string[], rounds: 1 | 2) => {
     if (!get().isAdmin) return;
-    const newLeague: League = { id: uuidv4(), name, teamIds, matches: [], settings: { rounds } };
+    const newLeague: League = { id: uuidv4(), name, teamIds, matches: [], settings: { rounds }, classificationZones: [] };
     set({ league: newLeague });
     get().generateLeagueMatches();
   },
@@ -199,22 +214,45 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       } : null
     }));
   },
-  setLeagueClassificationZone: () => { /* Placeholder */ },
+  addLeagueClassificationZone: (zoneData: Omit<ClassificationZone, 'id'>) => {
+    if (!get().isAdmin || !get().league) return;
+    const newZone: ClassificationZone = { ...zoneData, id: uuidv4() };
+    set((state: StoreState) => ({
+      league: state.league ? { ...state.league, classificationZones: [...(state.league.classificationZones || []), newZone] } : null
+    }));
+  },
+  removeLeagueClassificationZone: (zoneId: string) => {
+    if (!get().isAdmin || !get().league) return;
+    set((state: StoreState) => ({
+      league: state.league ? { ...state.league, classificationZones: (state.league.classificationZones || []).filter(z => z.id !== zoneId) } : null
+    }));
+  },
   setupKnockoutStage: (name: string, numTeams: number, teamIds: string[]) => {
-    if (!get().isAdmin) return;
-    const initialRoundName = numTeams === 2 ? "Final" : numTeams === 4 ? "Semi Finals" : numTeams === 8 ? "Quarter Finals" : `Round of ${numTeams}`;
+    if (!get().isAdmin || teamIds.length !== numTeams || (numTeams & (numTeams - 1)) !== 0 || numTeams < 2) return; // numTeams must be a power of 2
+    
+    const shuffledTeamIds = [...teamIds].sort(() => Math.random() - 0.5); // Shuffle teams for initial pairing
+
+    const getRoundName = (teamsInRound: number): string => {
+      if (teamsInRound === 2) return "Final";
+      if (teamsInRound === 4) return "Semifinales";
+      if (teamsInRound === 8) return "Cuartos de Final";
+      if (teamsInRound === 16) return "Octavos de Final";
+      return `Ronda de ${teamsInRound}`;
+    };
+
+    const initialRoundName = getRoundName(numTeams);
     const initialMatches: Match[] = [];
-    for(let i = 0; i < teamIds.length / 2; i++) {
+    for(let i = 0; i < shuffledTeamIds.length / 2; i++) {
         initialMatches.push({
             id: uuidv4(),
-            teamAId: teamIds[i*2],
-            teamBId: teamIds[i*2+1],
+            teamAId: shuffledTeamIds[i*2],
+            teamBId: shuffledTeamIds[i*2+1],
             played: false,
             roundName: initialRoundName
         })
     }
     const initialRound: KnockoutRound = {id: uuidv4(), name: initialRoundName, matches: initialMatches};
-    const newKnockoutStage: KnockoutStage = { id: uuidv4(), name, numTeams, teamIds, rounds: [initialRound] };
+    const newKnockoutStage: KnockoutStage = { id: uuidv4(), name, numTeams, teamIds: shuffledTeamIds, rounds: [initialRound] };
     set({ knockoutStage: newKnockoutStage });
   },
   deleteKnockoutStage: () => {
@@ -222,8 +260,16 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     set({ knockoutStage: null });
   },
   updateKnockoutMatchScore: (roundId: string, matchId: string, scoreA: number, scoreB: number) => {
-    if (!get().isAdmin || scoreA === scoreB) return; 
-    const winnerId = scoreA > scoreB ? get().knockoutStage?.rounds.find(r => r.id === roundId)?.matches.find(m => m.id === matchId)?.teamAId : get().knockoutStage?.rounds.find(r => r.id === roundId)?.matches.find(m => m.id === matchId)?.teamBId;
+    if (!get().isAdmin || scoreA === scoreB) return; // No draws in knockout
+    
+    let winnerId: string | undefined;
+    let currentStage = get().knockoutStage;
+    if(!currentStage) return;
+
+    const matchToUpdate = currentStage.rounds.find(r => r.id === roundId)?.matches.find(m => m.id === matchId);
+    if(!matchToUpdate) return;
+    winnerId = scoreA > scoreB ? matchToUpdate.teamAId : matchToUpdate.teamBId;
+    if(winnerId === 'TBD' || winnerId === 'TBD_DELETED') return; // Cannot determine winner if a team is TBD
 
     set((state: StoreState) => {
       if (!state.knockoutStage) return {};
@@ -244,36 +290,48 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const currentRound = updatedRounds[currentRoundIndex];
       let newKnockoutStage = { ...state.knockoutStage, rounds: updatedRounds };
 
+      // Check if all matches in the current round are played
       if (currentRound && currentRound.matches.every(m => m.played)) {
-        const winners = currentRound.matches.map(m => (m.scoreA! > m.scoreB!) ? m.teamAId : m.teamBId).filter(id => id !== undefined) as string[];
+        const winners = currentRound.matches.map(m => (m.scoreA! > m.scoreB!) ? m.teamAId : m.teamBId).filter(id => id && id !== 'TBD' && id !== 'TBD_DELETED') as string[];
+        
         if (winners.length === 1 && currentRound.matches.length === 1) { 
           newKnockoutStage.championId = winners[0];
         } else if (winners.length > 1 && currentRoundIndex === updatedRounds.length -1) { 
-          const nextRoundName = winners.length === 2 ? "Final" : `Round of ${winners.length}`;
+          // Create next round if this is the last defined round and there are multiple winners
+          const numTeamsNextRound = winners.length;
+           const getRoundName = (teamsInRound: number): string => {
+            if (teamsInRound === 2) return "Final";
+            if (teamsInRound === 4) return "Semifinales";
+            if (teamsInRound === 8) return "Cuartos de Final";
+            if (teamsInRound === 16) return "Octavos de Final";
+            return `Ronda de ${teamsInRound}`;
+          };
+          const nextRoundName = getRoundName(numTeamsNextRound);
           const nextRoundMatches: Match[] = [];
           for (let i = 0; i < winners.length; i += 2) {
-            if (winners[i+1]) { 
-                 nextRoundMatches.push({
-                    id: uuidv4(),
-                    teamAId: winners[i],
-                    teamBId: winners[i+1],
-                    played: false,
-                    roundName: nextRoundName
-                });
-            }
+            nextRoundMatches.push({
+                id: uuidv4(),
+                teamAId: winners[i],
+                teamBId: winners[i+1] ? winners[i+1] : 'TBD', // Handle bye if odd number of winners (shouldn't happen in powers of 2)
+                played: false,
+                roundName: nextRoundName
+            });
           }
           if(nextRoundMatches.length > 0){
              const nextRound: KnockoutRound = { id: uuidv4(), name: nextRoundName, matches: nextRoundMatches };
              newKnockoutStage.rounds = [...updatedRounds, nextRound];
-          } else if (winners.length === 1 && newKnockoutStage.rounds.flatMap(r => r.matches).filter(m => m.played).length === newKnockoutStage.numTeams -1) {
-            newKnockoutStage.championId = winners[0];
           }
+        } else if (winners.length === 0 && currentRound.matches.length === 1 && newKnockoutStage.championId){
+          // This case might occur if the final match was updated but champion was already set.
+          // No action needed, champion already determined.
         }
       }
       return { knockoutStage: newKnockoutStage };
     });
   },
   getTeamById: (teamId: string) => {
+    if (teamId === 'TBD') return { id: 'TBD', name: 'A Definir' };
+    if (teamId === 'TBD_DELETED') return { id: 'TBD_DELETED', name: 'Equipo Eliminado' };
     return get().teams.find((team: Team) => team.id === teamId);
   },
   getGroupStandings: (groupId: string) => {
@@ -328,6 +386,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       if (b.points !== a.points) return b.points - a.points;
       if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
       if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+      // Tie-breaking for direct matches if needed (more complex)
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
@@ -402,7 +461,21 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       const teamA = teams.find((t:Team) => t.id === a.teamId)?.name || '';
       const teamB = teams.find((t:Team) => t.id === b.teamId)?.name || '';
       return teamA.localeCompare(teamB);
-    }).map((s, index) => ({ ...s, rank: index + 1 }));
+    }).map((s, index) => {
+      const rank = index + 1;
+      let zoneColorClass: string | undefined = undefined;
+      let classificationZoneName: string | undefined = undefined;
+      if (league && league.classificationZones) {
+        for (const zone of league.classificationZones) {
+          if (rank >= zone.rankMin && rank <= zone.rankMax) {
+            zoneColorClass = zone.colorClass;
+            classificationZoneName = zone.name;
+            break;
+          }
+        }
+      }
+      return { ...s, rank, zoneColorClass, classificationZoneName };
+    });
   },
 });
 
@@ -415,7 +488,32 @@ export const useTournamentStore = create<StoreState>()(
     {
       name: 'tournament-storage', 
       storage: createJSONStorage(() => localStorage), 
+      onRehydrateStorage: (state) => {
+        // console.log("Hydration starts");
+        return (hydratedState, error) => {
+          if (error) {
+            // console.log('An error occurred during hydration', error);
+          } else {
+            // console.log('Hydration finished', hydratedState);
+             if (hydratedState && hydratedState.groups) {
+              hydratedState.groups.forEach(group => {
+                if (!Array.isArray(group.classificationZones)) {
+                  group.classificationZones = [];
+                }
+              });
+            }
+            if (hydratedState && hydratedState.league) {
+              if (!Array.isArray(hydratedState.league.classificationZones)) {
+                hydratedState.league.classificationZones = [];
+              }
+            }
+          }
+        };
+      },
     }
   )
 );
 
+if (typeof window !== 'undefined') {
+  (window as any).ZustandStore = useTournamentStore;
+}

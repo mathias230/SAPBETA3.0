@@ -35,7 +35,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
 
-const classificationColorOptions = [
+export const classificationColorOptions = [
   { label: "Verde (ej: Ascenso)", value: "bg-green-500/70 dark:bg-green-700/40" },
   { label: "Azul (ej: Repechaje)", value: "bg-blue-500/70 dark:bg-blue-700/40" },
   { label: "Amarillo (ej: Advertencia)", value: "bg-yellow-500/70 dark:bg-yellow-700/40" },
@@ -43,6 +43,85 @@ const classificationColorOptions = [
   { label: "Púrpura (ej: Especial)", value: "bg-purple-500/70 dark:bg-purple-700/40" },
   { label: "Gris (ej: Neutral)", value: "bg-gray-400/70 dark:bg-gray-600/40" },
 ];
+
+interface StandingsTableProps {
+  standings: Standing[];
+  getTeamName: (teamId: string) => string;
+  classificationZones: ClassificationZone[];
+}
+
+export function StandingsTable({ standings, getTeamName, classificationZones }: StandingsTableProps) {
+  if (standings.length === 0) {
+    return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
+  }
+  
+  const uniqueZonesInUse = classificationZones.filter(zone => 
+    standings.some(s => s.rank !== undefined && s.rank >= zone.rankMin && s.rank <= zone.rankMax)
+  ).sort((a,b) => a.rankMin - b.rankMin);
+
+  return (
+    <>
+      <ScrollArea className="max-h-[450px] rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-center w-[50px]">#</TableHead>
+              <TableHead>Equipo</TableHead>
+              <TableHead className="text-center">PJ</TableHead>
+              <TableHead className="text-center">G</TableHead>
+              <TableHead className="text-center">E</TableHead>
+              <TableHead className="text-center">P</TableHead>
+              <TableHead className="text-center">GF</TableHead>
+              <TableHead className="text-center">GC</TableHead>
+              <TableHead className="text-center">DG</TableHead>
+              <TableHead className="text-center">Pts</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {standings.map((s, index) => (
+              <TableRow key={s.teamId}>
+                <TableCell className="font-medium text-center relative px-0">
+                  {s.zoneColorClass && (
+                    <div
+                      className={`absolute left-0 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
+                      title={s.classificationZoneName || 'Zona de Clasificación'}
+                    ></div>
+                  )}
+                  <span className="ml-3">
+                    {(s.rank || index + 1)}.
+                  </span>
+                </TableCell>
+                <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
+                <TableCell className="text-center">{s.played}</TableCell>
+                <TableCell className="text-center">{s.won}</TableCell>
+                <TableCell className="text-center">{s.drawn}</TableCell>
+                <TableCell className="text-center">{s.lost}</TableCell>
+                <TableCell className="text-center">{s.goalsFor}</TableCell>
+                <TableCell className="text-center">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-semibold">{s.points}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+      {uniqueZonesInUse.length > 0 && (
+        <div className="mt-6 p-4 border rounded-md bg-muted/20">
+          <h4 className="text-sm font-semibold mb-3">Leyenda:</h4>
+          <ul className="space-y-2">
+            {uniqueZonesInUse.map(zone => (
+              <li key={zone.id} className="flex items-center text-xs">
+                <span className={`w-3.5 h-3.5 rounded-sm mr-2.5 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
+                <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
 
 export default function GroupsSection() {
   const { 
@@ -267,7 +346,7 @@ export default function GroupsSection() {
                         {availableTeamsForGroup(group.id).map(team => (
                           <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                         ))}
-                         {availableTeamsForGroup(group.id).length === 0 && <p className="p-2 text-sm text-muted-foreground">No hay equipos disponibles</p>}
+                         {availableTeamsForGroup(group.id).length === 0 && <SelectItem value="no-teams" disabled>No hay equipos disponibles</SelectItem>}
                       </SelectContent>
                     </Select>
                     <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Añadir Equipo</Button>
@@ -398,7 +477,7 @@ export default function GroupsSection() {
                 <Button 
                   onClick={() => {
                     const group = groups.find(g => g.id === viewingStandingsGroupId);
-                    const groupName = group ? group.name.replace(/\s+/g, '_') : 'Grupo'; // Sanitize name for filename
+                    const groupName = group ? group.name.replace(/\s+/g, '_') : 'Grupo'; 
                     exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `${groupName}-clasificacion.png`);
                   }}
                   variant="outline" 
@@ -499,84 +578,5 @@ export default function GroupsSection() {
         {isAdmin && " Define zonas de clasificación para las tablas en cada grupo."}
       </CardFooter>
     </Card>
-  );
-}
-
-
-interface StandingsTableProps {
-  standings: Standing[];
-  getTeamName: (teamId: string) => string;
-  classificationZones: ClassificationZone[];
-}
-
-function StandingsTable({ standings, getTeamName, classificationZones }: StandingsTableProps) {
-  if (standings.length === 0) {
-    return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
-  }
-  
-  const uniqueZonesInUse = classificationZones.filter(zone => 
-    standings.some(s => s.rank !== undefined && s.rank >= zone.rankMin && s.rank <= zone.rankMax)
-  ).sort((a,b) => a.rankMin - b.rankMin);
-
-  return (
-    <>
-      <ScrollArea className="max-h-[450px] rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-center">#</TableHead>
-              <TableHead>Equipo</TableHead>
-              <TableHead className="text-center">PJ</TableHead>
-              <TableHead className="text-center">G</TableHead>
-              <TableHead className="text-center">E</TableHead>
-              <TableHead className="text-center">P</TableHead>
-              <TableHead className="text-center">GF</TableHead>
-              <TableHead className="text-center">GC</TableHead>
-              <TableHead className="text-center">DG</TableHead>
-              <TableHead className="text-center">Pts</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {standings.map((s, index) => (
-              <TableRow key={s.teamId}>
-                <TableCell className="font-medium relative">
-                  {s.zoneColorClass && (
-                    <div
-                      className={`absolute left-0 top-0 bottom-0 w-1 ${s.zoneColorClass.split(' ')[0]}`}
-                      title={s.classificationZoneName || 'Zona de Clasificación'}
-                    ></div>
-                  )}
-                  <span className={s.zoneColorClass ? "ml-2" : ""}>
-                    {(s.rank || index + 1)}.
-                  </span>
-                </TableCell>
-                <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center">{s.played}</TableCell>
-                <TableCell className="text-center">{s.won}</TableCell>
-                <TableCell className="text-center">{s.drawn}</TableCell>
-                <TableCell className="text-center">{s.lost}</TableCell>
-                <TableCell className="text-center">{s.goalsFor}</TableCell>
-                <TableCell className="text-center">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center">{s.goalDifference}</TableCell>
-                <TableCell className="text-center font-semibold">{s.points}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </ScrollArea>
-      {uniqueZonesInUse.length > 0 && (
-        <div className="mt-6 p-4 border rounded-md bg-muted/30">
-          <h4 className="text-sm font-semibold mb-3">Leyenda:</h4>
-          <ul className="space-y-2">
-            {uniqueZonesInUse.map(zone => (
-              <li key={zone.id} className="flex items-center text-xs">
-                <span className={`w-3.5 h-3.5 rounded-sm mr-2.5 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
-                <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </>
   );
 }

@@ -1,4 +1,5 @@
 
+
 export interface Team {
   id: string;
   name: string;
@@ -19,7 +20,7 @@ export interface ClassificationZone {
   name: string;
   rankMin: number;
   rankMax: number;
-  colorClass: string; // Tailwind CSS class, e.g., "bg-green-200 dark:bg-green-800/60"
+  colorClass: string; 
 }
 
 export interface Standing {
@@ -33,8 +34,8 @@ export interface Standing {
   goalDifference: number;
   points: number;
   rank?: number;
-  classificationZoneName?: string; // Name of the zone, e.g., "Promotion"
-  zoneColorClass?: string; // Tailwind CSS class for background color
+  classificationZoneName?: string; 
+  zoneColorClass?: string; 
 }
 
 export interface Group {
@@ -53,7 +54,7 @@ export interface League {
   settings: {
     rounds: 1 | 2; 
   };
-  // classificationZones for league can be added similarly if needed
+  classificationZones: ClassificationZone[];
 }
 
 export interface KnockoutRound {
@@ -65,8 +66,8 @@ export interface KnockoutRound {
 export interface KnockoutStage {
   id: string;
   name: string;
-  numTeams: number;
-  teamIds: string[]; 
+  numTeams: number; // Must be a power of 2, e.g., 4, 8, 16
+  teamIds: string[]; // Initial teams participating
   rounds: KnockoutRound[];
   championId?: string;
 }
@@ -97,7 +98,7 @@ export interface TournamentActions {
   deleteTeam: (id: string) => void;
   
   // Groups
-  createGroup: (name: string) => string; // returns group ID
+  createGroup: (name: string) => string; 
   deleteGroup: (groupId: string) => void;
   addTeamToGroup: (groupId: string, teamId: string) => void;
   removeTeamFromGroup: (groupId: string, teamId: string) => void;
@@ -111,12 +112,13 @@ export interface TournamentActions {
   deleteLeague: () => void;
   generateLeagueMatches: () => void;
   updateLeagueMatchScore: (matchId: string, scoreA: number, scoreB: number) => void;
-  setLeagueClassificationZone: (rank: number, zone: string, color: string) => void; // Placeholder
+  addLeagueClassificationZone: (zone: Omit<ClassificationZone, 'id'>) => void;
+  removeLeagueClassificationZone: (zoneId: string) => void;
 
   // Knockout
   setupKnockoutStage: (name: string, numTeams: number, teamIds: string[]) => void;
   deleteKnockoutStage: () => void;
-  updateKnockoutMatchScore: (roundId: string, matchId: string, scoreA: number, scoreB: number) => void; // advances winner
+  updateKnockoutMatchScore: (roundId: string, matchId: string, scoreA: number, scoreB: number) => void; 
   
   // Utility
   getTeamById: (teamId: string) => Team | undefined;
@@ -128,3 +130,4 @@ export type StoreState = TournamentDataState & TournamentActions;
 
 // Constants
 export const ADMIN_PASSWORD = "123";
+

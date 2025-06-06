@@ -1,25 +1,458 @@
 
 "use client";
 
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ListChecks } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useTournamentStore } from '@/lib/store';
+import type { Team, Match as MatchType, Standing, League as LeagueType, ClassificationZone } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { ListChecks, PlusCircle, Trash2, Users, RefreshCcw, Download, Save, Palette, Settings, X, Trophy } from 'lucide-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { exportElementAsPNG } from '@/lib/export';
+import { StandingsTable, classificationColorOptions } from '@/components/sections/GroupsSection'; // Re-use from Groups
 
 export default function LeagueSection() {
+  const { 
+    league, teams, isAdmin, setupLeague, deleteLeague, generateLeagueMatches, 
+    updateLeagueMatchScore, getTeamById, getLeagueStandings,
+    addLeagueClassificationZone, removeLeagueClassificationZone
+  } = useTournamentStore();
+  
+  const [newLeagueName, setNewLeagueName] = useState('');
+  const [selectedTeamIdsForLeague, setSelectedTeamIdsForLeague] = useState<string[]>([]);
+  const [leagueRounds, setLeagueRounds] = useState<"1" | "2">("1");
+
+  const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
+  const [isDefineZoneModalOpen, setIsDefineZoneModalOpen] = useState(false);
+  const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneMinRank, setNewZoneMinRank] = useState('');
+  const [newZoneMaxRank, setNewZoneMaxRank] = useState('');
+  const [newZoneColorClass, setNewZoneColorClass] = useState(classificationColorOptions[0].value);
+  
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!league) {
+        setMatchScoresInput({});
+        return;
+    }
+    const newFormState: Record<string, { scoreA: string, scoreB: string }> = {};
+    league.matches.forEach(match => {
+      newFormState[match.id] = {
+        scoreA: match.played && match.scoreA !== undefined ? String(match.scoreA) : '',
+        scoreB: match.played && match.scoreB !== undefined ? String(match.scoreB) : '',
+      };
+    });
+     setMatchScoresInput(prevScores => {
+      const mergedState = {...newFormState};
+      Object.keys(prevScores).forEach(matchId => {
+        const leagueMatch = league.matches.find(m => m.id === matchId);
+        if (leagueMatch && !leagueMatch.played && (prevScores[matchId].scoreA !== '' || prevScores[matchId].scoreB !== '')) {
+          mergedState[matchId] = prevScores[matchId];
+        } else if (!leagueMatch) {
+           delete mergedState[matchId];
+        }
+      });
+      return mergedState;
+    });
+  }, [league]);
+
+  const handleMatchScoreInputChange = (matchId: string, team: 'A' | 'B', value: string) => {
+    setMatchScoresInput(prev => ({
+      ...prev,
+      [matchId]: {
+        ...(prev[matchId] || { scoreA: '', scoreB: '' }),
+        [team === 'A' ? 'scoreA' : 'scoreB']: value,
+      }
+    }));
+  };
+
+  const handleSaveMatchScore = (matchId: string) => {
+    const scores = matchScoresInput[matchId];
+    if (scores && scores.scoreA.trim() !== '' && scores.scoreB.trim() !== '') {
+      const scoreA = parseInt(scores.scoreA);
+      const scoreB = parseInt(scores.scoreB);
+      if (isNaN(scoreA) || isNaN(scoreB) || scoreA < 0 || scoreB < 0) {
+        toast({ title: "Error", description: "Los marcadores deben ser números válidos no negativos.", variant: "destructive" });
+        return;
+      }
+      updateLeagueMatchScore(matchId, scoreA, scoreB);
+      toast({ title: "Partido Actualizado", description: "El marcador ha sido registrado." });
+    } else {
+      toast({ title: "Error", description: "Por favor, ingresa ambos marcadores.", variant: "destructive" });
+    }
+  };
+
+  const handleSetupLeague = () => {
+    if (!newLeagueName.trim()) {
+      toast({ title: "Error", description: "El nombre de la liga no puede estar vacío.", variant: "destructive" });
+      return;
+    }
+    if (selectedTeamIdsForLeague.length < 2) {
+      toast({ title: "Error", description: "Se necesitan al menos 2 equipos para la liga.", variant: "destructive" });
+      return;
+    }
+    setupLeague(newLeagueName.trim(), selectedTeamIdsForLeague, leagueRounds === "1" ? 1 : 2);
+    toast({ title: "Liga Creada", description: `La liga "${newLeagueName.trim()}" ha sido configurada.` });
+    setNewLeagueName('');
+    setSelectedTeamIdsForLeague([]);
+    setLeagueRounds("1");
+  };
+
+  const handleAddClassificationZone = () => {
+    if (!league) return;
+    const rankMin = parseInt(newZoneMinRank);
+    const rankMax = parseInt(newZoneMaxRank);
+
+    if (!newZoneName.trim()) {
+      toast({ title: "Error", description: "El nombre de la zona no puede estar vacío.", variant: "destructive" }); return;
+    }
+    if (isNaN(rankMin) || rankMin <= 0) {
+      toast({ title: "Error", description: "El Puesto Mín. debe ser un número positivo.", variant: "destructive" }); return;
+    }
+    if (isNaN(rankMax) || rankMax <= 0) {
+      toast({ title: "Error", description: "El Puesto Máx. debe ser un número positivo.", variant: "destructive" }); return;
+    }
+    if (rankMin > rankMax) {
+      toast({ title: "Error", description: "El Puesto Mín. no puede ser mayor que el Puesto Máx.", variant: "destructive" }); return;
+    }
+     if ((league.classificationZones || []).some(zone => 
+        (rankMin >= zone.rankMin && rankMin <= zone.rankMax) || 
+        (rankMax >= zone.rankMin && rankMax <= zone.rankMax) ||
+        (zone.rankMin >= rankMin && zone.rankMin <= rankMax) ||
+        (zone.rankMax >= rankMin && zone.rankMax <= rankMax)
+     )) {
+        toast({ title: "Error", description: "El rango de puestos se superpone con una zona existente.", variant: "destructive" }); return;
+     }
+
+    addLeagueClassificationZone({
+      name: newZoneName.trim(),
+      rankMin,
+      rankMax,
+      colorClass: newZoneColorClass,
+    });
+    toast({ title: "Zona de Clasificación Añadida", description: `La zona "${newZoneName.trim()}" ha sido creada.` });
+    setNewZoneName('');
+    setNewZoneMinRank('');
+    setNewZoneMaxRank('');
+    setNewZoneColorClass(classificationColorOptions[0].value);
+  };
+
+  const handleRemoveClassificationZone = (zoneId: string) => {
+    removeLeagueClassificationZone(zoneId);
+    toast({ title: "Zona de Clasificación Eliminada" });
+  };
+
+  if (!league && isAdmin) {
+    return (
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center text-2xl font-headline">
+            <ListChecks className="mr-2 h-6 w-6 text-primary" /> Configurar Liga
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <Label htmlFor="leagueName">Nombre de la Liga</Label>
+            <Input id="leagueName" value={newLeagueName} onChange={(e) => setNewLeagueName(e.target.value)} placeholder="Ej: Liga Premier de Verano" />
+          </div>
+          <div>
+            <Label>Equipos Participantes ({selectedTeamIdsForLeague.length})</Label>
+            <ScrollArea className="h-40 border rounded-md p-2">
+              {teams.map(team => (
+                <div key={team.id} className="flex items-center space-x-2 mb-1">
+                  <input 
+                    type="checkbox" 
+                    id={`team-${team.id}-league`} 
+                    checked={selectedTeamIdsForLeague.includes(team.id)}
+                    onChange={() => {
+                      setSelectedTeamIdsForLeague(prev => 
+                        prev.includes(team.id) ? prev.filter(id => id !== team.id) : [...prev, team.id]
+                      )
+                    }}
+                  />
+                  <Label htmlFor={`team-${team.id}-league`}>{team.name}</Label>
+                </div>
+              ))}
+               {teams.length === 0 && <p className="text-sm text-muted-foreground p-2">No hay equipos creados. Ve a la pestaña 'Equipos'.</p>}
+            </ScrollArea>
+          </div>
+          <div>
+            <Label>Número de Rondas (Partidos por enfrentamiento)</Label>
+            <RadioGroup defaultValue="1" value={leagueRounds} onValueChange={(v: "1" | "2") => setLeagueRounds(v)} className="flex space-x-4 mt-1">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="1" id="r1-league" />
+                <Label htmlFor="r1-league">1 Ronda (Solo Ida)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="2" id="r2-league" />
+                <Label htmlFor="r2-league">2 Rondas (Ida y Vuelta)</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleSetupLeague}><PlusCircle className="mr-2 h-4 w-4" />Crear Liga</Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  if (!league) {
+    return (
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center text-2xl font-headline">
+             <ListChecks className="mr-2 h-6 w-6 text-primary" /> Gestión de Liga
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-muted-foreground/30 rounded-lg">
+            <ListChecks className="h-16 w-16 text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">Aún no se ha configurado una liga.</p>
+            {isAdmin && <p className="text-sm text-muted-foreground/80">El administrador puede crear una liga.</p>}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const leagueStandings = getLeagueStandings();
+
   return (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center text-2xl font-headline">
-           <ListChecks className="mr-2 h-6 w-6 text-primary" /> Gestión de Liga
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-muted-foreground/30 rounded-lg">
-          <ListChecks className="h-16 w-16 text-muted-foreground/50 mb-4" />
-          <p className="text-muted-foreground">Las funciones de gestión de liga están en construcción.</p>
-          <p className="text-sm text-muted-foreground/80">¡Pronto podrás configurar ligas, generar calendarios y seguir las clasificaciones!</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <Card className="shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center text-2xl font-headline">
+            <Trophy className="mr-2 h-6 w-6 text-yellow-500" /> {league.name}
+          </CardTitle>
+          {isAdmin && (
+            <div className="flex space-x-2">
+                 <Button variant="outline" size="sm" onClick={() => setIsDefineZoneModalOpen(true)}>
+                    <Palette className="mr-1 h-4 w-4" />Zonas
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm"><Trash2 className="mr-1 h-4 w-4" />Eliminar Liga</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar Liga: {league.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción eliminará la liga y todos sus datos asociados. No se puede deshacer.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { deleteLeague(); toast({ title: "Liga Eliminada" });}} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Eliminar
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+          )}
+        </CardHeader>
+      </Card>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 shadow-md">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+                <CardTitle className="text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Partidos</CardTitle>
+                {isAdmin && (
+                     <Button onClick={() => { generateLeagueMatches(); toast({ title: "Partidos Re-generados" }); }} className="w-auto" variant="outline" size="sm">
+                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar
+                    </Button>
+                )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {league.matches.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay partidos generados.</p> : (
+              <ScrollArea className="h-[400px] border rounded-md p-0">
+                <ul className="space-y-0">
+                  {league.matches.map((match, matchIndex) => {
+                    const teamA = getTeamById(match.teamAId);
+                    const teamB = getTeamById(match.teamBId);
+                    return (
+                      <li key={match.id} className={`p-3 ${matchIndex < league.matches.length - 1 ? 'border-b' : ''} bg-card hover:bg-muted/30`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium text-sm">{teamA?.name || 'TBA'} vs {teamB?.name || 'TBA'}</span>
+                          {!isAdmin && match.played && (
+                            <span className="font-semibold text-primary text-sm">{match.scoreA} - {match.scoreB}</span>
+                          )}
+                          {!isAdmin && !match.played && (
+                            <span className="text-xs text-muted-foreground">Pendiente</span>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <div className="mt-1 flex items-center space-x-2">
+                            <Input
+                              type="number"
+                              placeholder="Res. 1"
+                              value={matchScoresInput[match.id]?.scoreA ?? ''}
+                              onChange={(e) => handleMatchScoreInputChange(match.id, 'A', e.target.value)}
+                              className="w-20 h-8 text-sm"
+                              min="0"
+                            />
+                            <span>-</span>
+                            <Input
+                              type="number"
+                              placeholder="Res. 2"
+                              value={matchScoresInput[match.id]?.scoreB ?? ''}
+                              onChange={(e) => handleMatchScoreInputChange(match.id, 'B', e.target.value)}
+                              className="w-20 h-8 text-sm"
+                              min="0"
+                            />
+                            <Button size="sm" className="h-8 text-xs px-3" onClick={() => handleSaveMatchScore(match.id)}>
+                              <Save className="mr-1 h-3 w-3" /> Guardar
+                            </Button>
+                            {match.played && (
+                               <span className="text-xs font-semibold text-primary ml-auto">({match.scoreA} - {match.scoreB})</span>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-1 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Clasificación</CardTitle>
+          </CardHeader>
+          <CardContent id="league-standings-export" className="p-1 bg-card rounded-md">
+            <StandingsTable 
+                standings={leagueStandings} 
+                getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
+                classificationZones={league.classificationZones || []}
+             />
+          </CardContent>
+           <CardFooter className="pt-4 border-t">
+                <Button 
+                  onClick={() => exportElementAsPNG(`league-standings-export`, `${league.name.replace(/\s+/g, '_')}-clasificacion.png`)}
+                  variant="outline" 
+                  className="w-full"
+                  disabled={leagueStandings.length === 0}
+                >
+                  <Download className="mr-2 h-4 w-4" />Exportar Clasificación PNG
+                </Button>
+            </CardFooter>
+        </Card>
+      </div>
+
+      {isAdmin && (
+          <Dialog open={isDefineZoneModalOpen} onOpenChange={setIsDefineZoneModalOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Definir Zonas de Clasificación para {league.name}</DialogTitle>
+                <DialogDescription>Establece rangos de puestos y colores para diferentes zonas de clasificación.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2 p-3 border rounded-md">
+                  <h4 className="font-semibold text-sm">Zonas Actuales</h4>
+                  {(league.classificationZones || []).length === 0 && <p className="text-xs text-muted-foreground">Aún no se han definido zonas.</p>}
+                  <ul className="space-y-1">
+                    {(league.classificationZones || []).map(zone => (
+                      <li key={zone.id} className={`flex items-center justify-between p-2 rounded-md text-xs ${zone.colorClass.split(' ')[0].replace('bg-', 'text-').replace('-500/70', '-foreground').replace('-700/40', '-foreground')} ${zone.colorClass}`}>
+                        <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive-foreground hover:bg-destructive/80">
+                               <X className="h-3 w-3" />
+                             </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar Zona: {zone.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleRemoveClassificationZone(zone.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Eliminar Zona
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="space-y-3 p-3 border rounded-md">
+                  <h4 className="font-semibold text-sm">Añadir Nueva Zona</h4>
+                  <div>
+                    <Label htmlFor="leagueZoneName">Nombre de la Zona</Label>
+                    <Input id="leagueZoneName" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="ej: Campeón, Clasifica a Copa" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="leagueMinRank">Puesto Mín.</Label>
+                      <Input id="leagueMinRank" type="number" value={newZoneMinRank} onChange={e => setNewZoneMinRank(e.target.value)} placeholder="ej: 1" min="1" />
+                    </div>
+                    <div>
+                      <Label htmlFor="leagueMaxRank">Puesto Máx.</Label>
+                      <Input id="leagueMaxRank" type="number" value={newZoneMaxRank} onChange={e => setNewZoneMaxRank(e.target.value)} placeholder="ej: 1" min="1" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="leagueZoneColor">Color</Label>
+                    <Select value={newZoneColorClass} onValueChange={setNewZoneColorClass}>
+                      <SelectTrigger id="leagueZoneColor"><SelectValue placeholder="Seleccionar color" /></SelectTrigger>
+                      <SelectContent>
+                        {classificationColorOptions.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            <div className="flex items-center">
+                              <span className={`w-3 h-3 rounded-sm mr-2 ${opt.value.split(' ')[0]}`}></span>
+                              {opt.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={handleAddClassificationZone} className="w-full"><PlusCircle className="mr-2 h-4 w-4" />Añadir Zona</Button>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Hecho</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+    </div>
   );
 }
