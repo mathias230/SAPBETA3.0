@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, ChevronRight } from 'lucide-react';
+import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, ChevronRight, Download } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
+import { exportElementAsPNG } from '@/lib/export';
+
 
 const KnockoutMatchCard: React.FC<{
   match: MatchType;
@@ -74,12 +76,12 @@ const KnockoutMatchCard: React.FC<{
           )}
         </div>
       </div>
-      {isAdmin && !match.played && (teamAName !== 'A Definir' && teamBName !== 'A Definir') && (
+      {isAdmin && !match.played && (teamAName !== 'A Definir' && teamAName !== 'Equipo Eliminado' && teamBName !== 'A Definir' && teamBName !== 'Equipo Eliminado') && (
         <Button size="xs" onClick={handleSave} className="w-full mt-2.5 h-7 text-xs">
           <Save className="mr-1 h-3 w-3" /> Guardar Marcador
         </Button>
       )}
-       {isAdmin && match.played && (
+       {isAdmin && match.played && (teamAName !== 'Equipo Eliminado' && teamBName !== 'Equipo Eliminado') &&(
          <Button size="xs" onClick={handleSave} variant="outline" className="w-full mt-2.5 h-7 text-xs">
           <Save className="mr-1 h-3 w-3" /> Actualizar Marcador
         </Button>
@@ -102,7 +104,7 @@ export default function KnockoutSection() {
 
   const { toast } = useToast();
 
-  const powerOfTwoOptions = [4, 8, 16, 32];
+  const powerOfTwoOptions = [2, 4, 8, 16, 32]; // Added 2 for final only scenario
 
   useEffect(() => {
     if (!knockoutStage) {
@@ -181,6 +183,15 @@ export default function KnockoutSection() {
     return null;
   }, [knockoutStage, getTeamById]);
 
+  const handleExportBracket = () => {
+    if (knockoutStage) {
+        const stageName = knockoutStage.name.replace(/\s+/g, '_') || 'Bracket';
+        exportElementAsPNG('knockout-bracket-export-area', `${stageName}.png`);
+    } else {
+        toast({ title: "Error de Exportación", description: "No hay bracket para exportar.", variant: "destructive"});
+    }
+  };
+
 
   if (!knockoutStage && isAdmin) {
     return (
@@ -229,7 +240,7 @@ export default function KnockoutSection() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleSetupStage} disabled={teams.length < parseInt(numTeamsForStage)}><PlusCircle className="mr-2 h-4 w-4" />Crear Fase</Button>
+          <Button onClick={handleSetupStage} disabled={teams.length < parseInt(numTeamsForStage) || parseInt(numTeamsForStage) < 2}><PlusCircle className="mr-2 h-4 w-4" />Crear Fase</Button>
         </CardFooter>
       </Card>
     );
@@ -261,27 +272,32 @@ export default function KnockoutSection() {
           <CardTitle className="flex items-center text-2xl font-headline">
             <GitFork className="mr-2 h-6 w-6 text-primary" /> {knockoutStage.name}
           </CardTitle>
-          {isAdmin && (
-             <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm"><Trash2 className="mr-1 h-4 w-4" />Eliminar Fase</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>¿Eliminar Fase: {knockoutStage.name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta acción eliminará la fase eliminatoria y todos sus datos. No se puede deshacer.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => { deleteKnockoutStage(); toast({ title: "Fase Eliminada" });}} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Eliminar
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={handleExportBracket} disabled={knockoutStage.rounds.length === 0}>
+                <Download className="mr-2 h-4 w-4"/> Exportar Bracket
+            </Button>
+            {isAdmin && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm"><Trash2 className="mr-1 h-4 w-4" />Eliminar Fase</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar Fase: {knockoutStage.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción eliminará la fase eliminatoria y todos sus datos. No se puede deshacer.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => { deleteKnockoutStage(); toast({ title: "Fase Eliminada" });}} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Eliminar
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+          </div>
         </CardHeader>
         {champion && (
             <CardContent>
@@ -295,9 +311,9 @@ export default function KnockoutSection() {
       
       <Card>
         <CardHeader><CardTitle>Bracket de Eliminatorias</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent id="knockout-bracket-export-area" className="bg-card">
           <ScrollArea className="pb-4">
-            <div className="flex space-x-8 overflow-x-auto">
+            <div className="flex space-x-8 overflow-x-auto p-4"> {/* Added p-4 for padding during export */}
               {knockoutStage.rounds.map((round, roundIndex) => (
                 <div key={round.id} className="flex flex-col items-center space-y-6 min-w-max">
                   <h3 className="text-lg font-semibold text-center sticky top-0 bg-background/80 backdrop-blur-sm py-2 px-4 rounded-md z-10">{round.name}</h3>
@@ -313,7 +329,6 @@ export default function KnockoutSection() {
                           initialScoreA={matchScoresInput[match.id]?.scoreA ?? ''}
                           initialScoreB={matchScoresInput[match.id]?.scoreB ?? ''}
                         />
-                        {/* Render connector line if not the last round and match has a winner */}
                         {roundIndex < knockoutStage.rounds.length - 1 && match.played && 
                          knockoutStage.rounds[roundIndex+1] && knockoutStage.rounds[roundIndex+1].matches.some(
                             nextMatch => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
@@ -326,7 +341,7 @@ export default function KnockoutSection() {
                                 nextMatch => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
                                              nextMatch.teamBId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId)
                             ) && knockoutStage.championId !== (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) && (
-                            <div className="w-8 h-px bg-transparent mx-2"></div> // Placeholder for alignment if no connection
+                            <div className="w-8 h-px bg-transparent mx-2"></div> 
                          )}
                       </div>
                     ))}
@@ -341,4 +356,3 @@ export default function KnockoutSection() {
     </div>
   );
 }
-

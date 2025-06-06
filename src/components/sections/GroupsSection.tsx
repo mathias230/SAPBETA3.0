@@ -2,14 +2,14 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTournamentStore } from '@/lib/store';
 import type { Group as GroupType, Team, Match as MatchType, Standing, ClassificationZone, RandomGroupDistributionConfig } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette, Settings, X, Camera, Shuffle, Edit, SlidersHorizontal, CheckCircle, CircleOff } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette, Settings, X, Camera, Shuffle, Edit, SlidersHorizontal, CheckCircle, CircleOff, ImageDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -52,9 +52,11 @@ interface StandingsTableProps {
   standings: Standing[];
   getTeamName: (teamId: string) => string;
   classificationZones: ClassificationZone[];
+  groupName?: string; // Optional group name for multi-export titles
+  isMultiExport?: boolean; // Flag to adjust styling for multi-export
 }
 
-export function StandingsTable({ standings, getTeamName, classificationZones }: StandingsTableProps) {
+export function StandingsTable({ standings, getTeamName, classificationZones, groupName, isMultiExport }: StandingsTableProps) {
   if (standings.length === 0) {
     return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
   }
@@ -63,10 +65,13 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
     standings.some(s => s.rank !== undefined && s.rank >= zone.rankMin && s.rank <= zone.rankMax)
   ).sort((a,b) => a.rankMin - b.rankMin);
 
+  const tableId = groupName ? `standings-table-${groupName.replace(/\s+/g, '-')}` : undefined;
+
   return (
-    <>
-      <ScrollArea className="max-h-[60vh] rounded-md border">
-        <Table className="table-fixed w-full">
+    <div className={`bg-card rounded-md ${isMultiExport ? 'p-4 shadow-md border' : ''}`} id={tableId}>
+      {groupName && isMultiExport && <h3 className="text-lg font-semibold mb-3 text-center">{groupName}</h3>}
+      <ScrollArea className={`${isMultiExport ? '' : 'max-h-[60vh]'} rounded-md border`}>
+        <Table className="w-full table-fixed">
           <TableHeader className="bg-muted/50 sticky top-0 z-10">
             <TableRow>
               <TableHead className="text-center font-semibold w-20 px-2 py-3">#</TableHead>
@@ -109,8 +114,8 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
           </TableBody>
         </Table>
       </ScrollArea>
-      {activeZones.length > 0 && (
-        <div className="mt-4 p-3 border rounded-md space-y-1.5 text-xs text-muted-foreground">
+      {activeZones.length > 0 && !isMultiExport && (
+        <div className="mt-4 p-3 border rounded-md space-y-1 text-xs text-muted-foreground">
           <h4 className="font-semibold text-sm text-foreground mb-1.5">Leyenda de Zonas:</h4>
           {activeZones.map(zone => (
             <div key={zone.id} className="flex items-center py-1">
@@ -120,9 +125,10 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
+
 
 interface RandomDistributionModalProps {
   isOpen: boolean;
@@ -243,10 +249,9 @@ function ManualMatchModal({ isOpen, onClose, onAddMatch, groupTeams, groupName }
     onAddMatch(teamAId, teamBId);
     setTeamAId('');
     setTeamBId('');
-    // onClose(); // Keep modal open to add more matches easily
   };
   
-  useEffect(() => { // Reset teamB if teamA changes and teamB was teamA
+  useEffect(() => { 
     if (teamAId && teamAId === teamBId) {
       setTeamBId('');
     }
@@ -297,7 +302,8 @@ export default function GroupsSection() {
     generateGroupMatches, updateGroupMatchScore, getTeamById, getGroupStandings,
     addGroupClassificationZone, removeGroupClassificationZone,
     distributeTeamsRandomlyToGroups, setGroupMatchGenerationMode, setGroupRounds,
-    addManualMatchToGroup, removeManualMatchFromGroup, clearGroupMatches
+    addManualMatchToGroup, removeManualMatchFromGroup, clearGroupMatches,
+    selectedGroupIdsForExport, toggleSelectGroupForExport, clearSelectedGroupsForExport
   } = useTournamentStore();
   
   const [newGroupName, setNewGroupName] = useState('');
@@ -317,6 +323,8 @@ export default function GroupsSection() {
   const [groupForManualMatch, setGroupForManualMatch] = useState<GroupType | null>(null);
   
   const { toast } = useToast();
+  const multiExportRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const newFormState: Record<string, { scoreA: string, scoreB: string }> = {};
@@ -384,7 +392,7 @@ export default function GroupsSection() {
       const group = groups.find(g => g.id === groupId);
       const team = getTeamById(teamId);
       toast({ title: "Equipo Añadido al Grupo", description: `El equipo "${team?.name}" fue añadido al grupo "${group?.name}".` });
-      setSelectedTeamIdForGroupAdd(null); // Reset selection for next use
+      setSelectedTeamIdForGroupAdd(null); 
     } else {
       toast({ title: "Error", description: "Por favor, selecciona un grupo y un equipo.", variant: "destructive" });
     }
@@ -392,7 +400,7 @@ export default function GroupsSection() {
   
   const availableTeamsForGroupAdd = (groupId: string) => {
     const group = groups.find(g => g.id === groupId);
-    if (!group) return teams; // Should not happen if groupId is valid
+    if (!group) return teams; 
     return teams.filter(team => !(group.teamIds || []).includes(team.id));
   };
 
@@ -482,6 +490,24 @@ export default function GroupsSection() {
       toast({ title: "Partido Manual Añadido", description: `Partido entre ${getTeamById(teamAId)?.name} y ${getTeamById(teamBId)?.name} añadido.` });
     }
   };
+  
+  const handleExportMultipleGroups = async () => {
+    if (selectedGroupIdsForExport.length === 0) {
+      toast({ title: "Selección Vacía", description: "Selecciona al menos un grupo para exportar.", variant: "default" });
+      return;
+    }
+    // Temporarily show the hidden div
+    if (multiExportRef.current) {
+      multiExportRef.current.style.display = 'block';
+      // Ensure content is rendered before capturing
+      await new Promise(resolve => setTimeout(resolve, 500)); 
+      exportElementAsPNG('multi-group-export-container', 'Multi-Grupo-Clasificaciones.png');
+      multiExportRef.current.style.display = 'none'; // Hide it again
+      clearSelectedGroupsForExport();
+    } else {
+      toast({ title: "Error de Exportación", description: "No se pudo encontrar el contenedor de exportación.", variant: "destructive" });
+    }
+  };
 
   const viewingGroup = groups.find(g => g.id === viewingStandingsGroupId);
   const viewingGroupStandings = viewingStandingsGroupId ? getGroupStandings(viewingStandingsGroupId) : [];
@@ -510,9 +536,19 @@ export default function GroupsSection() {
                     />
                     <Button onClick={handleCreateGroup}><PlusCircle className="mr-2 h-4 w-4" />Crear Grupo</Button>
                 </div>
-                 <Button onClick={() => setIsRandomDistModalOpen(true)} variant="outline" className="w-full md:w-auto">
-                    <Shuffle className="mr-2 h-4 w-4" /> Distribución Aleatoria Global de Equipos
-                </Button>
+                <div className="flex flex-col md:flex-row gap-2">
+                    <Button onClick={() => setIsRandomDistModalOpen(true)} variant="outline" className="w-full md:w-auto">
+                        <Shuffle className="mr-2 h-4 w-4" /> Distribución Aleatoria Global
+                    </Button>
+                    <Button 
+                        onClick={handleExportMultipleGroups} 
+                        variant="outline" 
+                        className="w-full md:w-auto"
+                        disabled={selectedGroupIdsForExport.length === 0}
+                    >
+                        <ImageDown className="mr-2 h-4 w-4" /> Exportar Seleccionados ({selectedGroupIdsForExport.length})
+                    </Button>
+                </div>
             </CardContent>
           </Card>
         )}
@@ -522,8 +558,19 @@ export default function GroupsSection() {
         <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
         {groups.map(group => (
           <Card key={group.id} id={`group-card-${group.id}`} className="flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-xl">{group.name}</CardTitle>
+            <CardHeader className="flex flex-row items-start justify-between pb-3">
+                <div className="flex items-center">
+                    {isAdmin && (
+                        <Checkbox
+                        id={`select-group-${group.id}`}
+                        checked={selectedGroupIdsForExport.includes(group.id)}
+                        onCheckedChange={() => toggleSelectGroupForExport(group.id)}
+                        className="mr-3 self-center"
+                        aria-label={`Seleccionar grupo ${group.name} para exportar`}
+                        />
+                    )}
+                    <CardTitle className="text-xl">{group.name}</CardTitle>
+                </div>
               {isAdmin && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -572,7 +619,7 @@ export default function GroupsSection() {
                           <SelectItem value="2">2 Rondas (Ida y Vuelta)</SelectItem>
                         </SelectContent>
                       </Select>
-                       <Button onClick={() => { clearGroupMatches(group.id); generateGroupMatches(group.id); toast({ title: "Partidos (Auto) Generados" }); }} className="w-full mt-1" variant="secondary" size="sm">
+                       <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Partidos (Auto) Generados" }); }} className="w-full mt-1" variant="secondary" size="sm">
                         <RefreshCcw className="mr-2 h-4 w-4"/>Generar/Re-generar Partidos (Auto)
                       </Button>
                     </div>
@@ -721,7 +768,19 @@ export default function GroupsSection() {
                     </DialogTitle>
                     <DialogDescription>Tabla de posiciones y zonas del grupo.</DialogDescription>
                 </div>
-              <Button variant="ghost" size="icon" onClick={() => toast({title: "Funcionalidad no implementada", description: "Tomar foto individual aún no está disponible."})}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => {
+                    if(viewingStandingsGroupId && viewingGroup) {
+                        exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `Clasificacion-${viewingGroup.name.replace(/\s+/g, '_')}.png`);
+                    } else {
+                        toast({title: "Error de Exportación", description: "No se pudo encontrar el grupo para exportar.", variant: "destructive"})
+                    }
+                }}
+                disabled={!viewingStandingsGroupId || viewingGroupStandings.length === 0}
+                title="Exportar esta tabla de clasificación como PNG"
+              >
                 <Camera className="h-5 w-5" />
                 <span className="sr-only">Tomar Foto</span>
               </Button>
@@ -884,6 +943,26 @@ export default function GroupsSection() {
             groupName={groupForManualMatch.name}
           />
         )}
+
+        {/* Hidden container for multi-group export */}
+        <div ref={multiExportRef} id="multi-group-export-container" style={{ display: 'none', position: 'absolute', left: '-9999px', top: '-9999px' }} className="p-4 bg-background space-y-8">
+          {selectedGroupIdsForExport.map(groupId => {
+            const group = groups.find(g => g.id === groupId);
+            if (!group) return null;
+            const standings = getGroupStandings(groupId);
+            return (
+              <div key={`export-${groupId}`} className="mb-8 last:mb-0">
+                <StandingsTable
+                  standings={standings}
+                  getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
+                  classificationZones={group.classificationZones || []}
+                  groupName={group.name}
+                  isMultiExport={true}
+                />
+              </div>
+            );
+          })}
+        </div>
         
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground border-t pt-4">

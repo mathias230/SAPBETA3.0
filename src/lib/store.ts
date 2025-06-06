@@ -14,6 +14,7 @@ const initialState: Omit<StoreState, keyofReturnType<typeof tournamentActions>> 
   knockoutStage: null,
   isAdmin: false,
   theme: 'system',
+  selectedGroupIdsForExport: [], // New
 };
 
 // Helper to shuffle an array
@@ -42,6 +43,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       groups: [],
       league: null,
       knockoutStage: null,
+      selectedGroupIdsForExport: [],
     });
   },
   setTheme: (theme) => set({ theme }),
@@ -84,6 +86,9 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
             }).filter(match => !(match.teamAId === 'TBD_DELETED' && match.teamBId === 'TBD_DELETED'))
         }))
       } : null,
+      selectedGroupIdsForExport: state.selectedGroupIdsForExport.filter(groupId => 
+        !state.groups.find(g => g.id === groupId && (g.teamIds.includes(id) || g.matches.some(m => m.teamAId === id || m.teamBId === id)))
+      ),
     }));
   },
   createGroup: (name: string, matchGenerationMode: 'automatic' | 'manual' = 'automatic', rounds: 1 | 2 = 1) => {
@@ -100,10 +105,11 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     set((state: StoreState) => ({ groups: [...state.groups, newGroup] }));
     return newGroup.id;
   },
-  deleteGroup: (groupId: string) => {
+  deleteGroup: (groupIdToDelete: string) => {
     if (!get().isAdmin) return;
     set((state: StoreState) => ({
-      groups: state.groups.filter(g => g.id !== groupId)
+      groups: state.groups.filter(g => g.id !== groupIdToDelete),
+      selectedGroupIdsForExport: state.selectedGroupIdsForExport.filter(id => id !== groupIdToDelete),
     }));
   },
   addTeamToGroup: (groupId: string, teamId: string) => {
@@ -113,6 +119,10 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         g.id === groupId && !g.teamIds.includes(teamId) ? { ...g, teamIds: [...g.teamIds, teamId] } : g
       )
     }));
+    const group = get().groups.find((g: Group) => g.id === groupId);
+    if (group && group.matchGenerationMode === 'automatic' && group.teamIds.length >=2) {
+      get().generateGroupMatches(groupId);
+    }
   },
   removeTeamFromGroup: (groupId: string, teamId: string) => {
     if (!get().isAdmin) return;
@@ -126,6 +136,12 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
         return g;
       })
     }));
+     const group = get().groups.find((g: Group) => g.id === groupId);
+    if (group && group.matchGenerationMode === 'automatic' && group.teamIds.length >=2) {
+      get().generateGroupMatches(groupId);
+    } else if (group && group.matchGenerationMode === 'automatic' && group.teamIds.length < 2) {
+        get().clearGroupMatches(groupId);
+    }
   },
   distributeTeamsRandomlyToGroups: (config: RandomGroupDistributionConfig) => {
     if (!get().isAdmin) return;
@@ -169,7 +185,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     
     const finalGroups = newGroups.filter(g => g.teamIds.length > 0);
 
-    set({ groups: finalGroups });
+    set({ groups: finalGroups, selectedGroupIdsForExport: [] }); // Reset selection
 
     if (autoGenerateMatches) {
       finalGroups.forEach(group => {
@@ -184,7 +200,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     set((state: StoreState) => ({
       groups: state.groups.map(g => {
         if (g.id === groupId) {
-          return { ...g, matchGenerationMode: mode, matches: [] };
+          return { ...g, matchGenerationMode: mode, matches: [] }; // Clear matches on mode change
         }
         return g;
       })
@@ -203,7 +219,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     }));
     const group = get().groups.find((g: Group) => g.id === groupId);
     if (group && group.matchGenerationMode === 'automatic' && group.teamIds.length >=2) {
-      get().generateGroupMatches(groupId);
+      get().generateGroupMatches(groupId); // Regenerate matches with new round config
     }
   },
   clearGroupMatches: (groupId: string) => {
@@ -218,7 +234,18 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     if (!get().isAdmin) return;
     const group = get().groups.find((g: Group) => g.id === groupId);
     
-    if (!group || group.teamIds.length < 2 || group.matchGenerationMode === 'manual') return;
+    if (!group || group.teamIds.length < 2 || group.matchGenerationMode === 'manual') {
+      // If manual, or not enough teams, ensure matches are cleared if they were auto before
+      if (group && group.matchGenerationMode === 'manual') {
+         // Matches are managed manually, do nothing here.
+      } else if (group) {
+         set((state: StoreState) => ({
+          groups: state.groups.map(g => g.id === groupId ? { ...g, matches: [] } : g)
+        }));
+      }
+      return;
+    }
+
 
     let matches: Match[] = [];
     for (let i = 0; i < group.teamIds.length; i++) {
@@ -324,7 +351,16 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
   generateLeagueMatches: () => {
     if (!get().isAdmin) return;
     const league = get().league;
-    if (!league || league.teamIds.length < 2 || league.matchGenerationMode === 'manual') return;
+    if (!league || league.teamIds.length < 2 || league.matchGenerationMode === 'manual') {
+        if (league && league.matchGenerationMode === 'manual') {
+            // Matches are managed manually.
+        } else if (league) {
+            set((state: StoreState) => ({
+                league: state.league ? { ...state.league, matches: [] } : null
+            }));
+        }
+        return;
+    }
 
     let matches: Match[] = [];
     for (let i = 0; i < league.teamIds.length; i++) {
@@ -376,7 +412,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
   setLeagueMatchGenerationMode: (mode: 'automatic' | 'manual') => {
     if (!get().isAdmin || !get().league) return;
     set((state: StoreState) => ({
-      league: state.league ? { ...state.league, matchGenerationMode: mode, matches: [] } : null
+      league: state.league ? { ...state.league, matchGenerationMode: mode, matches: [] } : null // Clear matches
     }));
     if (mode === 'automatic' && get().league && get().league.teamIds.length >= 2) {
       get().generateLeagueMatches();
@@ -679,6 +715,20 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       return { ...s, rank, zoneColorClass, classificationZoneName };
     });
   },
+  // Export Selection
+  toggleSelectGroupForExport: (groupId: string) => {
+    if (!get().isAdmin) return;
+    set((state: StoreState) => {
+      const selectedGroupIdsForExport = state.selectedGroupIdsForExport.includes(groupId)
+        ? state.selectedGroupIdsForExport.filter(id => id !== groupId)
+        : [...state.selectedGroupIdsForExport, groupId];
+      return { selectedGroupIdsForExport };
+    });
+  },
+  clearSelectedGroupsForExport: () => {
+    if (!get().isAdmin) return;
+    set({ selectedGroupIdsForExport: [] });
+  },
 });
 
 export const useTournamentStore = create<StoreState>()(
@@ -696,6 +746,9 @@ export const useTournamentStore = create<StoreState>()(
             // console.log('An error occurred during hydration', error);
           } else {
             if (hydratedState) {
+              if (typeof hydratedState.selectedGroupIdsForExport === 'undefined') {
+                hydratedState.selectedGroupIdsForExport = [];
+              }
               if (hydratedState.groups) {
                 hydratedState.groups.forEach(group => {
                   if (!Array.isArray(group.classificationZones)) {
@@ -713,7 +766,6 @@ export const useTournamentStore = create<StoreState>()(
                 if (!Array.isArray(hydratedState.league.classificationZones)) {
                   hydratedState.league.classificationZones = [];
                 }
-                // Add default for league matchGenerationMode if not present
                 if (typeof hydratedState.league.matchGenerationMode === 'undefined') {
                   hydratedState.league.matchGenerationMode = 'automatic';
                 }
@@ -729,4 +781,3 @@ export const useTournamentStore = create<StoreState>()(
 if (typeof window !== 'undefined') {
   (window as any).ZustandStore = useTournamentStore;
 }
-

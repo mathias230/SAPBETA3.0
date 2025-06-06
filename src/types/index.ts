@@ -84,6 +84,7 @@ export interface TournamentDataState {
   knockoutStage: KnockoutStage | null;
   isAdmin: boolean;
   theme: AppTheme;
+  selectedGroupIdsForExport: string[]; // New: For multi-group export
 }
 
 export interface RandomGroupDistributionConfig {
@@ -148,10 +149,13 @@ export interface TournamentActions {
   getTeamById: (teamId: string) => Team | undefined;
   getGroupStandings: (groupId: string) => Standing[];
   getLeagueStandings: () => Standing[];
+
+  // Export Selection (New)
+  toggleSelectGroupForExport: (groupId: string) => void;
+  clearSelectedGroupsForExport: () => void;
 }
 
 export type StoreState = TournamentDataState & TournamentActions;
 
 // Constants
 export const ADMIN_PASSWORD = "123";
-
