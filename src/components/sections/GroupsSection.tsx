@@ -62,28 +62,28 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
   return (
     <>
       <ScrollArea className="max-h-[450px] rounded-md border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead className="text-center w-16">#</TableHead>
               <TableHead>Equipo</TableHead>
-              <TableHead className="text-center">PJ</TableHead>
-              <TableHead className="text-center">G</TableHead>
-              <TableHead className="text-center">E</TableHead>
-              <TableHead className="text-center">P</TableHead>
-              <TableHead className="text-center">GF</TableHead>
-              <TableHead className="text-center">GC</TableHead>
-              <TableHead className="text-center">DG</TableHead>
-              <TableHead className="text-center">Pts</TableHead>
+              <TableHead className="text-center w-14">PJ</TableHead>
+              <TableHead className="text-center w-14">G</TableHead>
+              <TableHead className="text-center w-14">E</TableHead>
+              <TableHead className="text-center w-14">P</TableHead>
+              <TableHead className="text-center w-14">GF</TableHead>
+              <TableHead className="text-center w-14">GC</TableHead>
+              <TableHead className="text-center w-14">DG</TableHead>
+              <TableHead className="text-center w-14">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {standings.map((s, index) => (
               <TableRow key={s.teamId}>
-                <TableCell className="font-medium text-left relative pl-6 pr-2 py-2">
+                <TableCell className="font-medium text-left relative pl-5 pr-2 py-2">
                   {s.zoneColorClass && (
                     <div
-                      className={`absolute left-2 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
+                      className={`absolute left-1.5 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
                       title={s.classificationZoneName || 'Zona de Clasificación'}
                     ></div>
                   )}
@@ -91,7 +91,7 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
-                <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
+                <TableCell className="font-medium truncate">{getTeamName(s.teamId)}</TableCell>
                 <TableCell className="text-center">{s.played}</TableCell>
                 <TableCell className="text-center">{s.won}</TableCell>
                 <TableCell className="text-center">{s.drawn}</TableCell>
@@ -146,7 +146,7 @@ export default function GroupsSection() {
   useEffect(() => {
     const newFormState: Record<string, { scoreA: string, scoreB: string }> = {};
     groups.forEach(group => {
-      group.matches.forEach(match => {
+      (group.matches || []).forEach(match => {
         newFormState[match.id] = {
           scoreA: match.played && match.scoreA !== undefined ? String(match.scoreA) : '',
           scoreB: match.played && match.scoreB !== undefined ? String(match.scoreB) : '',
@@ -156,7 +156,7 @@ export default function GroupsSection() {
     setMatchScoresInput(prevScores => {
       const mergedState = {...newFormState};
       Object.keys(prevScores).forEach(matchId => {
-        const groupMatch = groups.flatMap(g => g.matches).find(m => m.id === matchId);
+        const groupMatch = groups.flatMap(g => g.matches || []).find(m => m.id === matchId);
         if (groupMatch && !groupMatch.played && (prevScores[matchId].scoreA !== '' || prevScores[matchId].scoreB !== '')) {
           mergedState[matchId] = prevScores[matchId];
         } else if (!groupMatch) {
@@ -218,7 +218,7 @@ export default function GroupsSection() {
   const availableTeamsForGroup = (groupId: string) => {
     const group = groups.find(g => g.id === groupId);
     if (!group) return teams;
-    return teams.filter(team => !group.teamIds.includes(team.id));
+    return teams.filter(team => !(group.teamIds || []).includes(team.id));
   };
 
   const openManageZonesModal = (group: GroupType) => {
@@ -341,7 +341,7 @@ export default function GroupsSection() {
             <CardContent className="space-y-4 flex-grow">
               {isAdmin && (
                 <div className="space-y-2 p-3 border rounded-md bg-muted/20">
-                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Equipos en el Grupo</h4>
+                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Añadir Equipos al Grupo</h4>
                   <div className="flex space-x-2">
                     <Select onValueChange={setSelectedTeamIdForGroupAdd} value={selectedTeamIdForGroupAdd || ""}>
                       <SelectTrigger><SelectValue placeholder="Seleccionar equipo para añadir" /></SelectTrigger>
@@ -358,10 +358,10 @@ export default function GroupsSection() {
               )}
               
               <div>
-                 <h4 className="font-semibold mb-1 flex items-center"><Users className="mr-2 h-4 w-4" />Equipos en {group.name} ({group.teamIds.length})</h4>
-                {group.teamIds.length === 0 ? <p className="text-sm text-muted-foreground">No hay equipos asignados.</p> : (
+                 <h4 className="font-semibold mb-1 flex items-center"><Users className="mr-2 h-4 w-4" />Equipos en {group.name} ({(group.teamIds || []).length})</h4>
+                {(group.teamIds || []).length === 0 ? <p className="text-sm text-muted-foreground">No hay equipos asignados.</p> : (
                   <ul className="space-y-1 text-sm border rounded-md p-2">
-                    {group.teamIds.map(teamId => {
+                    {(group.teamIds || []).map(teamId => {
                       const team = getTeamById(teamId);
                       return (
                         <li key={teamId} className="flex justify-between items-center p-1.5 bg-background rounded hover:bg-muted/30">
@@ -378,13 +378,13 @@ export default function GroupsSection() {
                 )}
               </div>
 
-              {isAdmin && group.teamIds.length >= 2 && group.matches.length === 0 && (
+              {isAdmin && (group.teamIds || []).length >= 2 && (group.matches || []).length === 0 && (
                 <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Partidos Generados" }); }} className="w-full" variant="secondary">
                   <RefreshCcw className="mr-2 h-4 w-4"/>Generar Partidos
                 </Button>
               )}
               
-              {group.matches.length > 0 && (
+              {(group.matches || []).length > 0 && (
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-semibold flex items-center"><ListOrdered className="mr-2 h-4 w-4 text-primary" />Partidos (Orden Aleatorio)</h4>
@@ -396,11 +396,11 @@ export default function GroupsSection() {
                   </div>
                   <ScrollArea className="h-[250px] border rounded-md p-0">
                     <ul className="space-y-0">
-                      {group.matches.map((match, matchIndex) => {
+                      {(group.matches || []).map((match, matchIndex) => {
                         const teamA = getTeamById(match.teamAId);
                         const teamB = getTeamById(match.teamBId);
                         return (
-                          <li key={match.id} className={`p-3 ${matchIndex < group.matches.length - 1 ? 'border-b' : ''} bg-card hover:bg-muted/30`}>
+                          <li key={match.id} className={`p-3 ${(group.matches || []).length > 0 && matchIndex < (group.matches || []).length - 1 ? 'border-b' : ''} bg-card hover:bg-muted/30`}>
                             <div className="flex justify-between items-center mb-1">
                               <span className="font-medium text-sm">{teamA?.name || 'TBA'} vs {teamB?.name || 'TBA'}</span>
                               {!isAdmin && match.played && (
@@ -456,13 +456,13 @@ export default function GroupsSection() {
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
           <DialogContent className="max-w-3xl">
-            <DialogHeader className="flex flex-row justify-between items-center">
+            <DialogHeader className="flex flex-row justify-between items-center pr-6"> {/* Added pr-6 to avoid overlap with close button */}
               <DialogTitle className="flex items-center text-xl">
                 <ListChecks className="mr-2 h-5 w-5 text-primary" />
                 Clasificación: {viewingGroup?.name}
               </DialogTitle>
               <Button variant="outline" size="sm" onClick={() => toast({title: "Funcionalidad no implementada", description: "Tomar foto individual aún no está disponible."})}>
-                <Camera className="mr-2 h-4 w-4" /> Tomar Foto (Individual)
+                <Camera className="mr-2 h-4 w-4" /> Tomar Foto
               </Button>
             </DialogHeader>
             {viewingStandingsGroupId && (
