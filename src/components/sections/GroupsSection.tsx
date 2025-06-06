@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette, Settings, X } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Trash2, Users, ListChecks, RefreshCcw, Download, Save, ListOrdered, Palette, Settings, X, Camera } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -47,18 +47,13 @@ export const classificationColorOptions = [
 interface StandingsTableProps {
   standings: Standing[];
   getTeamName: (teamId: string) => string;
-  classificationZones: ClassificationZone[];
 }
 
-export function StandingsTable({ standings, getTeamName, classificationZones }: StandingsTableProps) {
+export function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
   if (standings.length === 0) {
     return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
   }
   
-  const uniqueZonesInUse = classificationZones.filter(zone => 
-    standings.some(s => s.rank !== undefined && s.rank >= zone.rankMin && s.rank <= zone.rankMax)
-  ).sort((a,b) => a.rankMin - b.rankMin);
-
   return (
     <>
       <ScrollArea className="max-h-[450px] rounded-md border">
@@ -105,19 +100,6 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
           </TableBody>
         </Table>
       </ScrollArea>
-      {uniqueZonesInUse.length > 0 && (
-        <div className="mt-6 p-4 border rounded-md bg-muted/20">
-          <h4 className="text-sm font-semibold mb-3">Leyenda:</h4>
-          <ul className="space-y-2">
-            {uniqueZonesInUse.map(zone => (
-              <li key={zone.id} className="flex items-center text-xs">
-                <span className={`w-3.5 h-3.5 rounded-sm mr-2.5 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
-                <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </>
   );
 }
@@ -223,9 +205,10 @@ export default function GroupsSection() {
     return teams.filter(team => !group.teamIds.includes(team.id));
   };
 
-  const handleOpenDefineZoneModal = (group: GroupType) => {
+  const openManageZonesModal = (group: GroupType) => {
     setSelectedGroupForZones(group);
     setIsDefineZoneModalOpen(true);
+    // Reset form fields when opening for a new group or re-opening
     setNewZoneName('');
     setNewZoneMinRank('');
     setNewZoneMaxRank('');
@@ -269,17 +252,23 @@ export default function GroupsSection() {
     setNewZoneMinRank('');
     setNewZoneMaxRank('');
     setNewZoneColorClass(classificationColorOptions[0].value);
-    const updatedGroup = groups.find(g => g.id === selectedGroupForZones.id);
+    // Refresh selectedGroupForZones to reflect new zone in the modal list
+    const updatedGroup = useTournamentStore.getState().groups.find(g => g.id === selectedGroupForZones.id);
     if (updatedGroup) setSelectedGroupForZones(updatedGroup);
   };
 
   const handleRemoveClassificationZone = (groupId: string, zoneId: string) => {
     removeGroupClassificationZone(groupId, zoneId);
     toast({ title: "Zona de Clasificación Eliminada" });
-    const updatedGroup = groups.find(g => g.id === selectedGroupForZones?.id);
-    if (updatedGroup) setSelectedGroupForZones(updatedGroup);
+    const updatedGroup = useTournamentStore.getState().groups.find(g => g.id === groupId);
+    if (updatedGroup && selectedGroupForZones && selectedGroupForZones.id === groupId) {
+       setSelectedGroupForZones(updatedGroup);
+    }
   };
 
+  const viewingGroup = groups.find(g => g.id === viewingStandingsGroupId);
+  const viewingGroupStandings = viewingStandingsGroupId ? getGroupStandings(viewingStandingsGroupId) : [];
+  const viewingGroupClassificationZones = viewingGroup?.classificationZones || [];
 
   return (
     <Card className="shadow-lg">
@@ -446,42 +435,70 @@ export default function GroupsSection() {
                <Button onClick={() => setViewingStandingsGroupId(group.id)} className="w-full" variant="outline">
                  <ListChecks className="mr-2 h-4 w-4"/>Ver Clasificación
                </Button>
-               {isAdmin && (
-                <Button variant="outline" className="w-full" onClick={() => handleOpenDefineZoneModal(group)}>
-                  <Palette className="mr-2 h-4 w-4" /> Definir Zonas de Clasificación
-                </Button>
-               )}
             </CardFooter>
           </Card>
         ))}
         </div>
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Clasificación: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
-              <DialogDescription>Puntos, DG, GF, GC calculados automáticamente. Las zonas de clasificación están resaltadas.</DialogDescription>
+          <DialogContent className="max-w-3xl"> {/* Increased width */}
+            <DialogHeader className="flex flex-row justify-between items-center">
+              <DialogTitle className="flex items-center text-xl">
+                <ListChecks className="mr-2 h-5 w-5 text-primary" />
+                Clasificación: {viewingGroup?.name}
+              </DialogTitle>
+              <Button variant="outline" size="sm" onClick={() => toast({title: "Funcionalidad no implementada", description: "Tomar foto individual aún no está disponible."})}>
+                <Camera className="mr-2 h-4 w-4" /> Tomar Foto (Individual)
+              </Button>
             </DialogHeader>
             {viewingStandingsGroupId && (
-              <div id={`group-standings-${viewingStandingsGroupId}`} className="p-1 bg-card rounded-md">
-                <StandingsTable 
-                  standings={getGroupStandings(viewingStandingsGroupId)} 
-                  getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
-                  classificationZones={groups.find(g => g.id === viewingStandingsGroupId)?.classificationZones || []}
-                />
+              <div className="space-y-6 py-4">
+                <div id={`group-standings-${viewingStandingsGroupId}`} className="p-1 bg-card rounded-md">
+                  <StandingsTable 
+                    standings={viewingGroupStandings} 
+                    getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
+                  />
+                </div>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-3">
+                    <CardTitle className="text-lg flex items-center">
+                      <Palette className="mr-2 h-5 w-5 text-primary" />
+                      Zonas de Clasificación de {viewingGroup?.name}
+                    </CardTitle>
+                    {isAdmin && viewingGroup && (
+                      <Button size="sm" variant="outline" onClick={() => openManageZonesModal(viewingGroup)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />Añadir/Gestionar Zona
+                      </Button>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    {viewingGroupClassificationZones.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No se han configurado zonas de clasificación para este grupo.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {viewingGroupClassificationZones.map(zone => (
+                          <li key={zone.id} className="flex items-center text-sm p-2 border rounded-md">
+                            <span className={`w-4 h-4 rounded-sm mr-3 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
+                            <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
             <DialogFooter className="sm:justify-between mt-4 pt-4 border-t">
-              <Button variant="outline" onClick={() => {setViewingStandingsGroupId(null)}}>Cerrar</Button>
+              <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
               {viewingStandingsGroupId && (
                 <Button 
                   onClick={() => {
-                    const group = groups.find(g => g.id === viewingStandingsGroupId);
-                    const groupName = group ? group.name.replace(/\s+/g, '_') : 'Grupo'; 
+                    const groupName = viewingGroup ? viewingGroup.name.replace(/\s+/g, '_') : 'Grupo'; 
                     exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `${groupName}-clasificacion.png`);
                   }}
                   variant="outline" 
-                  disabled={!viewingStandingsGroupId || getGroupStandings(viewingStandingsGroupId).length === 0}
+                  disabled={!viewingStandingsGroupId || viewingGroupStandings.length === 0}
                 >
                   <Download className="mr-2 h-4 w-4" />Exportar Clasificación PNG
                 </Button>
@@ -494,7 +511,7 @@ export default function GroupsSection() {
           <Dialog open={isDefineZoneModalOpen} onOpenChange={setIsDefineZoneModalOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Definir Zonas de Clasificación para {selectedGroupForZones.name}</DialogTitle>
+                <DialogTitle>Gestionar Zonas de Clasificación para {selectedGroupForZones.name}</DialogTitle>
                 <DialogDescription>Establece rangos de puestos y colores para diferentes zonas de clasificación.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -580,3 +597,4 @@ export default function GroupsSection() {
     </Card>
   );
 }
+
