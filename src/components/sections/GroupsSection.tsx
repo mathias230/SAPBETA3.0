@@ -373,9 +373,6 @@ export default function GroupsSection() {
                   <Palette className="mr-2 h-4 w-4" /> Define Classification Zones
                 </Button>
                )}
-                <Button onClick={() => exportElementAsPNG(`group-standings-${group.id}`, `${group.name}-standings.png`)} className="w-full" variant="outline" disabled={getGroupStandings(group.id).length === 0}>
-                  <Download className="mr-2 h-4 w-4" />Export Standings PNG
-                </Button>
             </CardFooter>
           </Card>
         ))}
@@ -396,8 +393,21 @@ export default function GroupsSection() {
                 />
               </div>
             )}
-            <DialogFooter>
+            <DialogFooter className="sm:justify-between">
               <Button variant="outline" onClick={() => setViewingStandingsGroupId(null)}>Close</Button>
+              {viewingStandingsGroupId && (
+                <Button 
+                  onClick={() => {
+                    const group = groups.find(g => g.id === viewingStandingsGroupId);
+                    const groupName = group ? group.name : 'Group';
+                    exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `${groupName}-standings.png`);
+                  }}
+                  variant="outline" 
+                  disabled={!viewingStandingsGroupId || getGroupStandings(viewingStandingsGroupId).length === 0}
+                >
+                  <Download className="mr-2 h-4 w-4" />Export Standings PNG
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -571,3 +581,4 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
     </>
   );
 }
+

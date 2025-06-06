@@ -1,3 +1,4 @@
+
 "use client";
 
 import html2canvas from 'html2canvas';
@@ -11,10 +12,15 @@ export const exportElementAsPNG = async (elementId: string, fileName: string = '
   }
 
   try {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    // Light theme background: #F2F0F4 (from globals.css --background: 255 17% 95%;)
+    // Dark theme background: #1C1A23 (from globals.css --background: 258 10% 12%;)
+    const exportBackgroundColor = isDarkMode ? '#1C1A23' : '#F2F0F4';
+
     const canvas = await html2canvas(element, {
       scale: 2, // Increase scale for better resolution
       useCORS: true, // If you have external images
-      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--background').trim() === '255 17% 95%' ? '#F2F0F4' : '#201A29' // Use theme background
+      backgroundColor: exportBackgroundColor
     });
     const image = canvas.toDataURL('image/png');
     const link = document.createElement('a');
@@ -28,3 +34,4 @@ export const exportElementAsPNG = async (elementId: string, fileName: string = '
     alert('Error exporting image. Please try again.');
   }
 };
+
