@@ -57,7 +57,7 @@ interface StandingsTableProps {
 }
 
 export function StandingsTable({ standings, getTeamName, classificationZones, groupName, isMultiExport }: StandingsTableProps) {
-  if (standings.length === 0 && !isMultiExport) { // Keep empty message for non-export view
+  if (standings.length === 0 && !isMultiExport) { 
     return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
   }
    if (standings.length === 0 && isMultiExport) { 
@@ -87,13 +87,13 @@ export function StandingsTable({ standings, getTeamName, classificationZones, gr
             <TableRow>
               <TableHead className="text-center font-semibold w-20 px-2 py-3">#</TableHead>
               <TableHead className="font-semibold px-3 py-3">Equipo</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">PJ</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">G</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">E</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">P</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">GF</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">GC</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-1 py-3">DG</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">PJ</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">G</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">E</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">P</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">GF</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">GC</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">DG</TableHead>
               <TableHead className="text-center font-semibold w-12 px-2 py-3">Pts</TableHead>
             </TableRow>
           </TableHeader>
@@ -112,13 +112,13 @@ export function StandingsTable({ standings, getTeamName, classificationZones, gr
                   </span>
                 </TableCell>
                 <TableCell className="font-medium px-3 py-3">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.played}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.won}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.drawn}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.lost}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.goalsFor}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center font-medium px-1 py-3">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.played}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.won}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.drawn}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.lost}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.goalsFor}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.goalDifference}</TableCell>
                 <TableCell className="text-center font-semibold px-2 py-3">{s.points}</TableCell>
               </TableRow>
             ))}
@@ -127,7 +127,7 @@ export function StandingsTable({ standings, getTeamName, classificationZones, gr
       </ScrollArea>
       {activeZones.length > 0 && (
         <div className={`mt-4 p-3 border rounded-md space-y-1 text-xs ${isMultiExport ? 'text-card-foreground/80' : 'text-muted-foreground'}`}>
-          <h4 className={`font-semibold text-sm ${isMultiExport ? 'text-card-foreground' : 'text-foreground'} mb-1.5`}>Leyenda de Zonas:</h4>
+          <h4 className={`font-semibold text-sm ${isMultiExport ? 'text-card-foreground' : 'text-foreground'} mb-1.5`}>Clasificaciones:</h4>
           {activeZones.map(zone => (
             <div key={zone.id} className="flex items-center py-1">
               <span className={`w-3 h-3 rounded-sm mr-2 border ${isMultiExport ? 'border-card-foreground/30' : 'border-foreground/20'} ${zone.colorClass.split(' ')[0]}`}></span>
@@ -508,17 +508,15 @@ export default function GroupsSection() {
       return;
     }
     if (multiExportRef.current) {
-      multiExportRef.current.style.display = 'block'; // Make it visible for rendering
-      multiExportRef.current.classList.add('dark'); // Ensure dark theme if active
+      multiExportRef.current.style.display = 'block'; 
       
       await new Promise(resolve => setTimeout(resolve, 100)); 
       
       exportElementAsPNG('multi-group-export-container', 'Multi-Grupo-Clasificaciones.png');
       
-      await new Promise(resolve => setTimeout(resolve, 100)); // Ensure export is done
+      await new Promise(resolve => setTimeout(resolve, 100)); 
       
       multiExportRef.current.style.display = 'none'; 
-      multiExportRef.current.classList.remove('dark');
     } else {
       toast({ title: "Error de Exportación", description: "No se pudo encontrar el contenedor de exportación.", variant: "destructive" });
     }
