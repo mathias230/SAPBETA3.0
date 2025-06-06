@@ -295,7 +295,7 @@ export default function LeagueSection() {
           </CardHeader>
           <CardContent>
             {league.matches.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay partidos generados.</p> : (
-              <ScrollArea className="h-[400px] border rounded-md p-0">
+              <ScrollArea className="h-[400px] border rounded-md p-0 md:h-[calc(100vh-300px)]"> {/* Adjusted height for larger screens */}
                 <ul className="space-y-0">
                   {league.matches.map((match, matchIndex) => {
                     const teamA = getTeamById(match.teamAId);
@@ -371,7 +371,7 @@ export default function LeagueSection() {
         </Card>
       </div>
 
-      {isAdmin && (
+      {isAdmin && league && (
           <Dialog open={isDefineZoneModalOpen} onOpenChange={setIsDefineZoneModalOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
@@ -456,3 +456,4 @@ export default function LeagueSection() {
     </div>
   );
 }
+
