@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -27,8 +28,6 @@ export default function TeamsSection() {
   const [editingTeamName, setEditingTeamName] = useState('');
   const { toast } = useToast();
 
-  // Effect to ensure component re-renders if `teams` from store changes.
-  // This can be helpful if other parts of the app modify `teams`.
   const [localTeams, setLocalTeams] = useState<Team[]>([]);
   useEffect(() => {
     setLocalTeams(teams);
@@ -37,53 +36,53 @@ export default function TeamsSection() {
 
   const handleAddTeam = () => {
     if (newTeamName.trim() === '') {
-      toast({ title: "Error", description: "Team name cannot be empty.", variant: "destructive" });
+      toast({ title: "Error", description: "El nombre del equipo no puede estar vacío.", variant: "destructive" });
       return;
     }
     addTeam(newTeamName.trim());
+    toast({ title: "Equipo Añadido", description: `El equipo "${newTeamName.trim()}" ha sido añadido.` });
     setNewTeamName('');
-    toast({ title: "Team Added", description: `${newTeamName.trim()} has been added.` });
   };
 
   const handleEditTeam = () => {
     if (editingTeam && editingTeamName.trim() !== '') {
       editTeam(editingTeam.id, editingTeamName.trim());
-      toast({ title: "Team Updated", description: `Team name changed to ${editingTeamName.trim()}.` });
+      toast({ title: "Equipo Actualizado", description: `Nombre del equipo cambiado a "${editingTeamName.trim()}".` });
       setEditingTeam(null);
       setEditingTeamName('');
     } else if (editingTeamName.trim() === '') {
-       toast({ title: "Error", description: "Team name cannot be empty.", variant: "destructive" });
+       toast({ title: "Error", description: "El nombre del equipo no puede estar vacío.", variant: "destructive" });
     }
   };
 
   const handleDeleteTeam = (teamId: string) => {
     const team = getTeamById(teamId);
     deleteTeam(teamId);
-    toast({ title: "Team Deleted", description: `${team?.name || 'Team'} has been removed.` });
+    toast({ title: "Equipo Eliminado", description: `El equipo "${team?.name || 'Equipo'}" ha sido eliminado.` });
   };
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center text-2xl font-headline">
-          <Users className="mr-2 h-6 w-6 text-primary" /> Manage Teams
+          <Users className="mr-2 h-6 w-6 text-primary" /> Gestionar Equipos
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isAdmin && (
           <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-            <h3 className="text-lg font-semibold mb-2">Add New Team</h3>
+            <h3 className="text-lg font-semibold mb-2">Añadir Nuevo Equipo</h3>
             <div className="flex space-x-2">
               <Input
                 type="text"
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
-                placeholder="Enter team name"
+                placeholder="Ingresar nombre del equipo"
                 className="flex-grow"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddTeam()}
               />
               <Button onClick={handleAddTeam} className="bg-primary hover:bg-primary/90">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Team
+                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Equipo
               </Button>
             </div>
           </div>
@@ -91,24 +90,24 @@ export default function TeamsSection() {
 
         {editingTeam && isAdmin && (
           <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-            <h3 className="text-lg font-semibold mb-2">Edit Team: {getTeamById(editingTeam.id)?.name}</h3>
+            <h3 className="text-lg font-semibold mb-2">Editar Equipo: {getTeamById(editingTeam.id)?.name}</h3>
             <div className="flex space-x-2">
               <Input
                 type="text"
                 value={editingTeamName}
                 onChange={(e) => setEditingTeamName(e.target.value)}
-                placeholder="Enter new team name"
+                placeholder="Ingresar nuevo nombre del equipo"
                 className="flex-grow"
                  onKeyPress={(e) => e.key === 'Enter' && handleEditTeam()}
               />
-              <Button onClick={handleEditTeam} variant="secondary">Save Changes</Button>
-              <Button onClick={() => setEditingTeam(null)} variant="outline">Cancel</Button>
+              <Button onClick={handleEditTeam} variant="secondary">Guardar Cambios</Button>
+              <Button onClick={() => setEditingTeam(null)} variant="outline">Cancelar</Button>
             </div>
           </div>
         )}
 
         {localTeams.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">No teams have been added yet.</p>
+          <p className="text-muted-foreground text-center py-4">Aún no se han añadido equipos.</p>
         ) : (
           <ul className="space-y-3">
             {localTeams.map((team) => (
@@ -123,27 +122,27 @@ export default function TeamsSection() {
                         setEditingTeam(team);
                         setEditingTeamName(team.name);
                       }}
-                      aria-label={`Edit ${team.name}`}
+                      aria-label={`Editar ${team.name}`}
                     >
                       <Edit3 className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete ${team.name}`}>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Eliminar ${team.name}`}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Team: {team.name}?</AlertDialogTitle>
+                          <AlertDialogTitle>¿Eliminar Equipo: {team.name}?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will remove the team from the tournament and any associated groups or leagues. This action cannot be undone.
+                            Esto eliminará el equipo del torneo y de cualquier grupo o liga asociado. Esta acción no se puede deshacer.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleDeleteTeam(team.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete Team
+                            Eliminar Equipo
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -156,7 +155,7 @@ export default function TeamsSection() {
         )}
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground">
-        {localTeams.length} team{localTeams.length === 1 ? '' : 's'} in the tournament.
+        {localTeams.length} equipo{localTeams.length === 1 ? '' : 's'} en el torneo.
       </CardFooter>
     </Card>
   );

@@ -4,8 +4,8 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Tournament Trackr',
-  description: 'Manage your sports tournaments with ease.',
+  title: 'Gestor de Torneos',
+  description: 'Gestiona tus torneos deportivos con facilidad.',
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

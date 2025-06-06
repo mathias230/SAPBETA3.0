@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -38,20 +39,20 @@ export default function AppHeader() {
   const handleLogin = (password: string) => {
     if (login(password)) {
       setIsAuthModalOpen(false);
-      toast({ title: "Admin Mode Activated", description: "You now have full access." });
+      toast({ title: "Modo Administrador Activado", description: "Ahora tienes acceso completo." });
     } else {
-      toast({ title: "Login Failed", description: "Incorrect password.", variant: "destructive" });
+      toast({ title: "Fallo de Autenticación", description: "Contraseña incorrecta.", variant: "destructive" });
     }
   };
 
   const handleLogout = () => {
     logout();
-    toast({ title: "Admin Mode Deactivated" });
+    toast({ title: "Modo Administrador Desactivado" });
   };
   
   const handleReset = () => {
     resetTournament();
-    toast({ title: "Tournament Reset", description: "All data has been cleared." });
+    toast({ title: "Torneo Reiniciado", description: "Todos los datos han sido borrados." });
   }
 
   return (
@@ -60,7 +61,7 @@ export default function AppHeader() {
         <div className="flex items-center">
           <ShieldCheck className="h-8 w-8 mr-2 text-primary" />
           <h1 className="text-2xl font-bold font-headline">
-            SAP <span className="text-sm font-normal text-muted-foreground">Tournament Trackr</span>
+            SAP <span className="text-sm font-normal text-muted-foreground">Gestor de Torneos</span>
           </h1>
         </div>
         <div className="flex items-center space-x-2">
@@ -68,13 +69,13 @@ export default function AppHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
                 {theme === 'light' ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
-                <span className="sr-only">Toggle theme</span>
+                <span className="sr-only">Alternar tema</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('light')}>Claro</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('dark')}>Oscuro</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('system')}>Sistema</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -83,32 +84,32 @@ export default function AppHeader() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="border-primary text-primary hover:bg-primary/10">
                   <Unlock className="h-[1.2rem] w-[1.2rem]" />
-                  <span className="sr-only">Admin Menu</span>
+                  <span className="sr-only">Menú de Administrador</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleLogout}>
                   <Unlock className="mr-2 h-4 w-4" />
-                  <span>Logout Admin</span>
+                  <span>Cerrar Sesión Admin</span>
                 </DropdownMenuItem>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       <Settings2 className="mr-2 h-4 w-4" />
-                       <span>Reset Tournament</span>
+                       <span>Reiniciar Torneo</span>
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Reset Tournament Data?</AlertDialogTitle>
+                      <AlertDialogTitle>¿Reiniciar Datos del Torneo?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. All teams, groups, league progress, and knockout stages will be permanently deleted.
+                        Esta acción no se puede deshacer. Todos los equipos, grupos, progreso de la liga y fases eliminatorias se eliminarán permanentemente.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction onClick={handleReset} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Reset Data
+                        Reiniciar Datos
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -118,7 +119,7 @@ export default function AppHeader() {
           ) : (
             <Button variant="outline" size="icon" onClick={() => setIsAuthModalOpen(true)}>
               <Lock className="h-[1.2rem] w-[1.2rem]" />
-              <span className="sr-only">Login as Admin</span>
+              <span className="sr-only">Ingresar como Administrador</span>
             </Button>
           )}
         </div>

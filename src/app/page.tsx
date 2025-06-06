@@ -12,10 +12,10 @@ export default function Home() {
       <main className="flex-grow container mx-auto py-8 px-4">
         <Tabs defaultValue="teams" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
-            <TabsTrigger value="teams">Teams</TabsTrigger>
-            <TabsTrigger value="groups">Group Stage</TabsTrigger>
-            <TabsTrigger value="league">League</TabsTrigger>
-            <TabsTrigger value="knockout">Knockout</TabsTrigger>
+            <TabsTrigger value="teams">Equipos</TabsTrigger>
+            <TabsTrigger value="groups">Fase de Grupos</TabsTrigger>
+            <TabsTrigger value="league">Liga</TabsTrigger>
+            <TabsTrigger value="knockout">Eliminatorias</TabsTrigger>
           </TabsList>
           <TabsContent value="teams">
             <TeamsSection />
@@ -32,7 +32,7 @@ export default function Home() {
         </Tabs>
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground border-t">
-        Tournament Trackr by SAP - &copy; {new Date().getFullYear()}
+        Gestor de Torneos por SAP - &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );

@@ -36,12 +36,12 @@ import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
 
 const classificationColorOptions = [
-  { label: "Green (e.g., Promotion)", value: "bg-green-500/70 dark:bg-green-700/40" },
-  { label: "Blue (e.g., Play-off)", value: "bg-blue-500/70 dark:bg-blue-700/40" },
-  { label: "Yellow (e.g., Warning)", value: "bg-yellow-500/70 dark:bg-yellow-700/40" },
-  { label: "Red (e.g., Relegation)", value: "bg-red-500/70 dark:bg-red-700/40" },
-  { label: "Purple (e.g., Special)", value: "bg-purple-500/70 dark:bg-purple-700/40" },
-  { label: "Gray (e.g., Neutral)", value: "bg-gray-400/70 dark:bg-gray-600/40" },
+  { label: "Verde (ej: Ascenso)", value: "bg-green-500/70 dark:bg-green-700/40" },
+  { label: "Azul (ej: Repechaje)", value: "bg-blue-500/70 dark:bg-blue-700/40" },
+  { label: "Amarillo (ej: Advertencia)", value: "bg-yellow-500/70 dark:bg-yellow-700/40" },
+  { label: "Rojo (ej: Descenso)", value: "bg-red-500/70 dark:bg-red-700/40" },
+  { label: "Púrpura (ej: Especial)", value: "bg-purple-500/70 dark:bg-purple-700/40" },
+  { label: "Gris (ej: Neutral)", value: "bg-gray-400/70 dark:bg-gray-600/40" },
 ];
 
 export default function GroupsSection() {
@@ -106,23 +106,23 @@ export default function GroupsSection() {
       const scoreA = parseInt(scores.scoreA);
       const scoreB = parseInt(scores.scoreB);
       if (isNaN(scoreA) || isNaN(scoreB) || scoreA < 0 || scoreB < 0) {
-        toast({ title: "Error", description: "Scores must be valid non-negative numbers.", variant: "destructive" });
+        toast({ title: "Error", description: "Los marcadores deben ser números válidos no negativos.", variant: "destructive" });
         return;
       }
       updateGroupMatchScore(groupId, matchId, scoreA, scoreB);
-      toast({ title: "Match Updated", description: "Score has been recorded." });
+      toast({ title: "Partido Actualizado", description: "El marcador ha sido registrado." });
     } else {
-      toast({ title: "Error", description: "Please enter both scores.", variant: "destructive" });
+      toast({ title: "Error", description: "Por favor, ingresa ambos marcadores.", variant: "destructive" });
     }
   };
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) {
-      toast({ title: "Error", description: "Group name cannot be empty.", variant: "destructive" });
+      toast({ title: "Error", description: "El nombre del grupo no puede estar vacío.", variant: "destructive" });
       return;
     }
     createGroup(newGroupName.trim());
-    toast({ title: "Group Created", description: `Group "${newGroupName.trim()}" has been created.` });
+    toast({ title: "Grupo Creado", description: `El grupo "${newGroupName.trim()}" ha sido creado.` });
     setNewGroupName('');
   };
   
@@ -131,10 +131,10 @@ export default function GroupsSection() {
       addTeamToGroup(selectedGroupIdForTeamAdd, selectedTeamIdForGroupAdd);
       const group = groups.find(g => g.id === selectedGroupIdForTeamAdd);
       const team = getTeamById(selectedTeamIdForGroupAdd);
-      toast({ title: "Team Added to Group", description: `Team "${team?.name}" added to group "${group?.name}".` });
+      toast({ title: "Equipo Añadido al Grupo", description: `El equipo "${team?.name}" fue añadido al grupo "${group?.name}".` });
       setSelectedTeamIdForGroupAdd(null); 
     } else {
-      toast({ title: "Error", description: "Please select a group and a team.", variant: "destructive" });
+      toast({ title: "Error", description: "Por favor, selecciona un grupo y un equipo.", variant: "destructive" });
     }
   };
   
@@ -159,16 +159,16 @@ export default function GroupsSection() {
     const rankMax = parseInt(newZoneMaxRank);
 
     if (!newZoneName.trim()) {
-      toast({ title: "Error", description: "Zone name cannot be empty.", variant: "destructive" }); return;
+      toast({ title: "Error", description: "El nombre de la zona no puede estar vacío.", variant: "destructive" }); return;
     }
     if (isNaN(rankMin) || rankMin <= 0) {
-      toast({ title: "Error", description: "Min Rank must be a positive number.", variant: "destructive" }); return;
+      toast({ title: "Error", description: "El Puesto Mín. debe ser un número positivo.", variant: "destructive" }); return;
     }
     if (isNaN(rankMax) || rankMax <= 0) {
-      toast({ title: "Error", description: "Max Rank must be a positive number.", variant: "destructive" }); return;
+      toast({ title: "Error", description: "El Puesto Máx. debe ser un número positivo.", variant: "destructive" }); return;
     }
     if (rankMin > rankMax) {
-      toast({ title: "Error", description: "Min Rank cannot be greater than Max Rank.", variant: "destructive" }); return;
+      toast({ title: "Error", description: "El Puesto Mín. no puede ser mayor que el Puesto Máx.", variant: "destructive" }); return;
     }
      if ((selectedGroupForZones.classificationZones || []).some(zone => 
         (rankMin >= zone.rankMin && rankMin <= zone.rankMax) || 
@@ -176,9 +176,8 @@ export default function GroupsSection() {
         (zone.rankMin >= rankMin && zone.rankMin <= rankMax) ||
         (zone.rankMax >= rankMin && zone.rankMax <= rankMax)
      )) {
-        toast({ title: "Error", description: "Rank range overlaps with an existing zone.", variant: "destructive" }); return;
+        toast({ title: "Error", description: "El rango de puestos se superpone con una zona existente.", variant: "destructive" }); return;
      }
-
 
     addGroupClassificationZone(selectedGroupForZones.id, {
       name: newZoneName.trim(),
@@ -186,7 +185,7 @@ export default function GroupsSection() {
       rankMax,
       colorClass: newZoneColorClass,
     });
-    toast({ title: "Classification Zone Added", description: `Zone "${newZoneName.trim()}" created.` });
+    toast({ title: "Zona de Clasificación Añadida", description: `La zona "${newZoneName.trim()}" ha sido creada.` });
     setNewZoneName('');
     setNewZoneMinRank('');
     setNewZoneMaxRank('');
@@ -197,7 +196,7 @@ export default function GroupsSection() {
 
   const handleRemoveClassificationZone = (groupId: string, zoneId: string) => {
     removeGroupClassificationZone(groupId, zoneId);
-    toast({ title: "Classification Zone Removed" });
+    toast({ title: "Zona de Clasificación Eliminada" });
     const updatedGroup = groups.find(g => g.id === selectedGroupForZones?.id);
     if (updatedGroup) setSelectedGroupForZones(updatedGroup);
   };
@@ -207,26 +206,26 @@ export default function GroupsSection() {
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center text-2xl font-headline">
-          <LayoutGrid className="mr-2 h-6 w-6 text-primary" /> Group Stage Management
+          <LayoutGrid className="mr-2 h-6 w-6 text-primary" /> Gestión de Fase de Grupos
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {isAdmin && (
           <Card>
-            <CardHeader><CardTitle className="text-lg">Create New Group</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Crear Nuevo Grupo</CardTitle></CardHeader>
             <CardContent className="flex space-x-2">
               <Input 
-                placeholder="Group Name (e.g., Group A)" 
+                placeholder="Nombre del Grupo (ej: Grupo A)" 
                 value={newGroupName} 
                 onChange={(e) => setNewGroupName(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleCreateGroup()}
               />
-              <Button onClick={handleCreateGroup}><PlusCircle className="mr-2 h-4 w-4" />Create Group</Button>
+              <Button onClick={handleCreateGroup}><PlusCircle className="mr-2 h-4 w-4" />Crear Grupo</Button>
             </CardContent>
           </Card>
         )}
 
-        {groups.length === 0 && <p className="text-muted-foreground text-center py-4">No groups created yet.</p>}
+        {groups.length === 0 && <p className="text-muted-foreground text-center py-4">Aún no se han creado grupos.</p>}
 
         <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
         {groups.map(group => (
@@ -237,20 +236,20 @@ export default function GroupsSection() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />Delete Group
+                      <Trash2 className="mr-2 h-4 w-4" />Eliminar Grupo
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Group: {group.name}?</AlertDialogTitle>
+                      <AlertDialogTitle>¿Eliminar Grupo: {group.name}?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will remove the group and all its associated data. This action cannot be undone.
+                        Esto eliminará el grupo y todos sus datos asociados. Esta acción no se puede deshacer.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => { deleteGroup(group.id); toast({ title: "Group Deleted" }); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete Group
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => { deleteGroup(group.id); toast({ title: "Grupo Eliminado" }); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Eliminar Grupo
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -260,33 +259,33 @@ export default function GroupsSection() {
             <CardContent className="space-y-4 flex-grow">
               {isAdmin && (
                 <div className="space-y-2 p-3 border rounded-md bg-muted/20">
-                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Teams in Group</h4>
+                  <h4 className="font-semibold flex items-center"><Users className="mr-2 h-4 w-4 text-primary" />Equipos en el Grupo</h4>
                   <div className="flex space-x-2">
                     <Select onValueChange={setSelectedTeamIdForGroupAdd} value={selectedTeamIdForGroupAdd || ""}>
-                      <SelectTrigger><SelectValue placeholder="Select team to add" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar equipo para añadir" /></SelectTrigger>
                       <SelectContent>
                         {availableTeamsForGroup(group.id).map(team => (
                           <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                         ))}
-                         {availableTeamsForGroup(group.id).length === 0 && <p className="p-2 text-sm text-muted-foreground">No available teams</p>}
+                         {availableTeamsForGroup(group.id).length === 0 && <p className="p-2 text-sm text-muted-foreground">No hay equipos disponibles</p>}
                       </SelectContent>
                     </Select>
-                    <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Add Team</Button>
+                    <Button size="sm" onClick={() => { setSelectedGroupIdForTeamAdd(group.id); handleAddTeamToSelectedGroup();}}>Añadir Equipo</Button>
                   </div>
                 </div>
               )}
               
               <div>
-                 <h4 className="font-semibold mb-1 flex items-center"><Users className="mr-2 h-4 w-4" />Teams in {group.name} ({group.teamIds.length})</h4>
-                {group.teamIds.length === 0 ? <p className="text-sm text-muted-foreground">No teams assigned.</p> : (
+                 <h4 className="font-semibold mb-1 flex items-center"><Users className="mr-2 h-4 w-4" />Equipos en {group.name} ({group.teamIds.length})</h4>
+                {group.teamIds.length === 0 ? <p className="text-sm text-muted-foreground">No hay equipos asignados.</p> : (
                   <ul className="space-y-1 text-sm border rounded-md p-2">
                     {group.teamIds.map(teamId => {
                       const team = getTeamById(teamId);
                       return (
                         <li key={teamId} className="flex justify-between items-center p-1.5 bg-background rounded hover:bg-muted/30">
-                          {team?.name || 'Unknown Team'}
+                          {team?.name || 'Equipo Desconocido'}
                           {isAdmin && (
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => { removeTeamFromGroup(group.id, teamId); toast({title: "Team Removed"}); }}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => { removeTeamFromGroup(group.id, teamId); toast({title: "Equipo Eliminado del Grupo"}); }}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
@@ -298,18 +297,18 @@ export default function GroupsSection() {
               </div>
 
               {isAdmin && group.teamIds.length >= 2 && group.matches.length === 0 && (
-                <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Matches Generated" }); }} className="w-full" variant="secondary">
-                  <RefreshCcw className="mr-2 h-4 w-4"/>Generate Matches
+                <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Partidos Generados" }); }} className="w-full" variant="secondary">
+                  <RefreshCcw className="mr-2 h-4 w-4"/>Generar Partidos
                 </Button>
               )}
               
               {group.matches.length > 0 && (
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-semibold flex items-center"><ListOrdered className="mr-2 h-4 w-4 text-primary" />Matches (Random Order)</h4>
+                    <h4 className="font-semibold flex items-center"><ListOrdered className="mr-2 h-4 w-4 text-primary" />Partidos (Orden Aleatorio)</h4>
                     {isAdmin && (
-                      <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Matches Re-generated" }); }} className="w-auto" variant="outline" size="sm">
-                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generate Matches
+                      <Button onClick={() => { generateGroupMatches(group.id); toast({ title: "Partidos Re-generados" }); }} className="w-auto" variant="outline" size="sm">
+                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar Partidos
                       </Button>
                     )}
                   </div>
@@ -326,7 +325,7 @@ export default function GroupsSection() {
                                 <span className="font-semibold text-primary text-sm">{match.scoreA} - {match.scoreB}</span>
                               )}
                               {!isAdmin && !match.played && (
-                                <span className="text-xs text-muted-foreground">Pending</span>
+                                <span className="text-xs text-muted-foreground">Pendiente</span>
                               )}
                             </div>
                             {isAdmin && (
@@ -349,7 +348,7 @@ export default function GroupsSection() {
                                   min="0"
                                 />
                                 <Button size="sm" className="h-8 text-xs px-3" onClick={() => handleSaveMatchScore(group.id, match.id)}>
-                                  <Save className="mr-1 h-3 w-3" /> Save
+                                  <Save className="mr-1 h-3 w-3" /> Guardar
                                 </Button>
                                 {match.played && (
                                    <span className="text-xs font-semibold text-primary ml-auto">({match.scoreA} - {match.scoreB})</span>
@@ -366,11 +365,11 @@ export default function GroupsSection() {
             </CardContent>
             <CardFooter className="flex-col items-stretch space-y-2 mt-auto pt-4">
                <Button onClick={() => setViewingStandingsGroupId(group.id)} className="w-full" variant="outline">
-                 <ListChecks className="mr-2 h-4 w-4"/>View Standings
+                 <ListChecks className="mr-2 h-4 w-4"/>Ver Clasificación
                </Button>
                {isAdmin && (
                 <Button variant="outline" className="w-full" onClick={() => handleOpenDefineZoneModal(group)}>
-                  <Palette className="mr-2 h-4 w-4" /> Define Classification Zones
+                  <Palette className="mr-2 h-4 w-4" /> Definir Zonas de Clasificación
                 </Button>
                )}
             </CardFooter>
@@ -381,8 +380,8 @@ export default function GroupsSection() {
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Standings: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
-              <DialogDescription>Points, GD, GF, GA calculated automatically. Classification zones are highlighted.</DialogDescription>
+              <DialogTitle className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Clasificación: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
+              <DialogDescription>Puntos, DG, GF, GC calculados automáticamente. Las zonas de clasificación están resaltadas.</DialogDescription>
             </DialogHeader>
             {viewingStandingsGroupId && (
               <div id={`group-standings-${viewingStandingsGroupId}`} className="p-1 bg-card rounded-md">
@@ -394,18 +393,18 @@ export default function GroupsSection() {
               </div>
             )}
             <DialogFooter className="sm:justify-between mt-4 pt-4 border-t">
-              <Button variant="outline" onClick={() => setViewingStandingsGroupId(null)}>Close</Button>
+              <Button variant="outline" onClick={() => {setViewingStandingsGroupId(null)}}>Cerrar</Button>
               {viewingStandingsGroupId && (
                 <Button 
                   onClick={() => {
                     const group = groups.find(g => g.id === viewingStandingsGroupId);
-                    const groupName = group ? group.name : 'Group';
-                    exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `${groupName}-standings.png`);
+                    const groupName = group ? group.name.replace(/\s+/g, '_') : 'Grupo'; // Sanitize name for filename
+                    exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `${groupName}-clasificacion.png`);
                   }}
                   variant="outline" 
                   disabled={!viewingStandingsGroupId || getGroupStandings(viewingStandingsGroupId).length === 0}
                 >
-                  <Download className="mr-2 h-4 w-4" />Export Standings PNG
+                  <Download className="mr-2 h-4 w-4" />Exportar Clasificación PNG
                 </Button>
               )}
             </DialogFooter>
@@ -416,17 +415,17 @@ export default function GroupsSection() {
           <Dialog open={isDefineZoneModalOpen} onOpenChange={setIsDefineZoneModalOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Define Classification Zones for {selectedGroupForZones.name}</DialogTitle>
-                <DialogDescription>Set rank ranges and colors for different classification zones.</DialogDescription>
+                <DialogTitle>Definir Zonas de Clasificación para {selectedGroupForZones.name}</DialogTitle>
+                <DialogDescription>Establece rangos de puestos y colores para diferentes zonas de clasificación.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2 p-3 border rounded-md">
-                  <h4 className="font-semibold text-sm">Current Zones</h4>
-                  {(selectedGroupForZones.classificationZones || []).length === 0 && <p className="text-xs text-muted-foreground">No zones defined yet.</p>}
+                  <h4 className="font-semibold text-sm">Zonas Actuales</h4>
+                  {(selectedGroupForZones.classificationZones || []).length === 0 && <p className="text-xs text-muted-foreground">Aún no se han definido zonas.</p>}
                   <ul className="space-y-1">
                     {(selectedGroupForZones.classificationZones || []).map(zone => (
                       <li key={zone.id} className={`flex items-center justify-between p-2 rounded-md text-xs ${zone.colorClass.split(' ')[0].replace('bg-', 'text-').replace('-500/70', '-foreground').replace('-700/40', '-foreground')} ${zone.colorClass}`}>
-                        <span>{zone.name} (Ranks {zone.rankMin}-{zone.rankMax})</span>
+                        <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive-foreground hover:bg-destructive/80">
@@ -435,13 +434,13 @@ export default function GroupsSection() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Zone: {zone.name}?</AlertDialogTitle>
-                              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                              <AlertDialogTitle>¿Eliminar Zona: {zone.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleRemoveClassificationZone(selectedGroupForZones.id, zone.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete Zone
+                                Eliminar Zona
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -451,25 +450,25 @@ export default function GroupsSection() {
                   </ul>
                 </div>
                 <div className="space-y-3 p-3 border rounded-md">
-                  <h4 className="font-semibold text-sm">Add New Zone</h4>
+                  <h4 className="font-semibold text-sm">Añadir Nueva Zona</h4>
                   <div>
-                    <Label htmlFor="zoneName">Zone Name</Label>
-                    <Input id="zoneName" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="e.g., Promotion, Relegation" />
+                    <Label htmlFor="zoneName">Nombre de la Zona</Label>
+                    <Input id="zoneName" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="ej: Ascenso, Descenso" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="minRank">Min Rank</Label>
-                      <Input id="minRank" type="number" value={newZoneMinRank} onChange={e => setNewZoneMinRank(e.target.value)} placeholder="e.g., 1" min="1" />
+                      <Label htmlFor="minRank">Puesto Mín.</Label>
+                      <Input id="minRank" type="number" value={newZoneMinRank} onChange={e => setNewZoneMinRank(e.target.value)} placeholder="ej: 1" min="1" />
                     </div>
                     <div>
-                      <Label htmlFor="maxRank">Max Rank</Label>
-                      <Input id="maxRank" type="number" value={newZoneMaxRank} onChange={e => setNewZoneMaxRank(e.target.value)} placeholder="e.g., 3" min="1" />
+                      <Label htmlFor="maxRank">Puesto Máx.</Label>
+                      <Input id="maxRank" type="number" value={newZoneMaxRank} onChange={e => setNewZoneMaxRank(e.target.value)} placeholder="ej: 3" min="1" />
                     </div>
                   </div>
                   <div>
                     <Label htmlFor="zoneColor">Color</Label>
                     <Select value={newZoneColorClass} onValueChange={setNewZoneColorClass}>
-                      <SelectTrigger id="zoneColor"><SelectValue placeholder="Select color" /></SelectTrigger>
+                      <SelectTrigger id="zoneColor"><SelectValue placeholder="Seleccionar color" /></SelectTrigger>
                       <SelectContent>
                         {classificationColorOptions.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>
@@ -482,12 +481,12 @@ export default function GroupsSection() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleAddClassificationZone} className="w-full"><PlusCircle className="mr-2 h-4 w-4" />Add Zone</Button>
+                  <Button onClick={handleAddClassificationZone} className="w-full"><PlusCircle className="mr-2 h-4 w-4" />Añadir Zona</Button>
                 </div>
               </div>
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant="outline">Done</Button>
+                  <Button variant="outline">Hecho</Button>
                 </DialogClose>
               </DialogFooter>
             </DialogContent>
@@ -496,8 +495,8 @@ export default function GroupsSection() {
         
       </CardContent>
       <CardFooter className="text-sm text-muted-foreground border-t pt-4">
-        {groups.length} group{groups.length === 1 ? '' : 's'} configured. 
-        {isAdmin && " Define classification zones for standings in each group."}
+        {groups.length} grupo{groups.length === 1 ? '' : 's'} configurado{groups.length !== 1 ? 's' : ''}. 
+        {isAdmin && " Define zonas de clasificación para las tablas en cada grupo."}
       </CardFooter>
     </Card>
   );
@@ -512,7 +511,7 @@ interface StandingsTableProps {
 
 function StandingsTable({ standings, getTeamName, classificationZones }: StandingsTableProps) {
   if (standings.length === 0) {
-    return <p className="text-muted-foreground p-4 text-center">No matches played or standings to display.</p>;
+    return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
   }
   
   const uniqueZonesInUse = classificationZones.filter(zone => 
@@ -525,29 +524,29 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[60px] text-center">#</TableHead>
-              <TableHead>Team</TableHead>
+              <TableHead className="text-center">#</TableHead>
+              <TableHead>Equipo</TableHead>
+              <TableHead className="text-center">PJ</TableHead>
+              <TableHead className="text-center">G</TableHead>
+              <TableHead className="text-center">E</TableHead>
               <TableHead className="text-center">P</TableHead>
-              <TableHead className="text-center">W</TableHead>
-              <TableHead className="text-center">D</TableHead>
-              <TableHead className="text-center">L</TableHead>
               <TableHead className="text-center">GF</TableHead>
-              <TableHead className="text-center">GA</TableHead>
-              <TableHead className="text-center">GD</TableHead>
+              <TableHead className="text-center">GC</TableHead>
+              <TableHead className="text-center">DG</TableHead>
               <TableHead className="text-center">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {standings.map((s, index) => (
               <TableRow key={s.teamId}>
-                <TableCell className="text-center font-medium relative w-[60px]">
+                <TableCell className="font-medium relative">
                   {s.zoneColorClass && (
                     <div
-                      className={`absolute left-1 top-1/2 -translate-y-1/2 h-5 w-1.5 rounded-sm ${s.zoneColorClass.split(' ')[0]}`}
-                      title={s.classificationZoneName || 'Classification Zone'}
+                      className={`absolute left-0 top-0 bottom-0 w-1 ${s.zoneColorClass.split(' ')[0]}`}
+                      title={s.classificationZoneName || 'Zona de Clasificación'}
                     ></div>
                   )}
-                  <span className={s.zoneColorClass ? "ml-3" : ""}>
+                  <span className={s.zoneColorClass ? "ml-2" : ""}>
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
@@ -567,12 +566,12 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
       </ScrollArea>
       {uniqueZonesInUse.length > 0 && (
         <div className="mt-6 p-4 border rounded-md bg-muted/30">
-          <h4 className="text-sm font-semibold mb-3">Legend:</h4>
+          <h4 className="text-sm font-semibold mb-3">Leyenda:</h4>
           <ul className="space-y-2">
             {uniqueZonesInUse.map(zone => (
               <li key={zone.id} className="flex items-center text-xs">
                 <span className={`w-3.5 h-3.5 rounded-sm mr-2.5 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
-                <span>{zone.name} (Ranks {zone.rankMin}-{zone.rankMax})</span>
+                <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
               </li>
             ))}
           </ul>
@@ -581,4 +580,3 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
     </>
   );
 }
-

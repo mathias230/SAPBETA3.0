@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -31,14 +32,14 @@ export default function AdminAuthModal({ isOpen, setIsOpen, onLogin }: AdminAuth
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Admin Login</DialogTitle>
-          <DialogDescription>Enter the admin password to manage the tournament.</DialogDescription>
+          <DialogTitle>Acceso de Administrador</DialogTitle>
+          <DialogDescription>Ingresa la contraseña de administrador para gestionar el torneo.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="password_admin" className="text-right">
-                Password
+                Contraseña
               </Label>
               <Input
                 id="password_admin"
@@ -51,8 +52,8 @@ export default function AdminAuthModal({ isOpen, setIsOpen, onLogin }: AdminAuth
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button type="submit">Login</Button>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+            <Button type="submit">Ingresar</Button>
           </DialogFooter>
         </form>
       </DialogContent>
