@@ -36,12 +36,12 @@ import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
 
 const classificationColorOptions = [
-  { label: "Green (e.g., Promotion)", value: "bg-green-200/70 dark:bg-green-700/40" },
-  { label: "Blue (e.g., Play-off)", value: "bg-blue-200/70 dark:bg-blue-700/40" },
-  { label: "Yellow (e.g., Warning)", value: "bg-yellow-200/70 dark:bg-yellow-700/40" },
-  { label: "Red (e.g., Relegation)", value: "bg-red-200/70 dark:bg-red-700/40" },
-  { label: "Purple (e.g., Special)", value: "bg-purple-200/70 dark:bg-purple-700/40" },
-  { label: "Gray (e.g., Neutral)", value: "bg-gray-300/70 dark:bg-gray-600/40" },
+  { label: "Green (e.g., Promotion)", value: "bg-green-500/70 dark:bg-green-700/40" },
+  { label: "Blue (e.g., Play-off)", value: "bg-blue-500/70 dark:bg-blue-700/40" },
+  { label: "Yellow (e.g., Warning)", value: "bg-yellow-500/70 dark:bg-yellow-700/40" },
+  { label: "Red (e.g., Relegation)", value: "bg-red-500/70 dark:bg-red-700/40" },
+  { label: "Purple (e.g., Special)", value: "bg-purple-500/70 dark:bg-purple-700/40" },
+  { label: "Gray (e.g., Neutral)", value: "bg-gray-400/70 dark:bg-gray-600/40" },
 ];
 
 export default function GroupsSection() {
@@ -379,7 +379,7 @@ export default function GroupsSection() {
         </div>
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Standings: {groups.find(g => g.id === viewingStandingsGroupId)?.name}</DialogTitle>
               <DialogDescription>Points, GD, GF, GA calculated automatically. Classification zones are highlighted.</DialogDescription>
@@ -393,7 +393,7 @@ export default function GroupsSection() {
                 />
               </div>
             )}
-            <DialogFooter className="sm:justify-between">
+            <DialogFooter className="sm:justify-between mt-4 pt-4 border-t">
               <Button variant="outline" onClick={() => setViewingStandingsGroupId(null)}>Close</Button>
               {viewingStandingsGroupId && (
                 <Button 
@@ -425,7 +425,7 @@ export default function GroupsSection() {
                   {(selectedGroupForZones.classificationZones || []).length === 0 && <p className="text-xs text-muted-foreground">No zones defined yet.</p>}
                   <ul className="space-y-1">
                     {(selectedGroupForZones.classificationZones || []).map(zone => (
-                      <li key={zone.id} className={`flex items-center justify-between p-2 rounded-md text-xs ${zone.colorClass}`}>
+                      <li key={zone.id} className={`flex items-center justify-between p-2 rounded-md text-xs ${zone.colorClass.split(' ')[0].replace('bg-', 'text-').replace('-500/70', '-foreground').replace('-700/40', '-foreground')} ${zone.colorClass}`}>
                         <span>{zone.name} (Ranks {zone.rankMin}-{zone.rankMax})</span>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -517,15 +517,15 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
   
   const uniqueZonesInUse = classificationZones.filter(zone => 
     standings.some(s => s.rank !== undefined && s.rank >= zone.rankMin && s.rank <= zone.rankMax)
-  );
+  ).sort((a,b) => a.rankMin - b.rankMin);
 
   return (
     <>
-      <ScrollArea className="max-h-[400px] rounded-md border">
+      <ScrollArea className="max-h-[450px] rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px] text-center">#</TableHead>
+              <TableHead className="w-[60px] text-center">#</TableHead>
               <TableHead>Team</TableHead>
               <TableHead className="text-center">P</TableHead>
               <TableHead className="text-center">W</TableHead>
@@ -540,10 +540,10 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
           <TableBody>
             {standings.map((s, index) => (
               <TableRow key={s.teamId}>
-                <TableCell className="text-center font-medium relative px-2 py-2 w-[50px]">
+                <TableCell className="text-center font-medium relative w-[60px]">
                   {s.zoneColorClass && (
                     <div
-                      className={`absolute left-1 top-1/2 -translate-y-1/2 h-4 w-1 rounded-sm ${s.zoneColorClass.split(' ')[0]}`}
+                      className={`absolute left-1 top-1/2 -translate-y-1/2 h-5 w-1.5 rounded-sm ${s.zoneColorClass.split(' ')[0]}`}
                       title={s.classificationZoneName || 'Classification Zone'}
                     ></div>
                   )}
@@ -551,27 +551,27 @@ function StandingsTable({ standings, getTeamName, classificationZones }: Standin
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
-                <TableCell className="font-medium px-2 py-2">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.played}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.won}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.drawn}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.lost}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.goalsFor}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center px-2 py-2">{s.goalDifference}</TableCell>
-                <TableCell className="text-center font-semibold px-2 py-2">{s.points}</TableCell>
+                <TableCell className="font-medium">{getTeamName(s.teamId)}</TableCell>
+                <TableCell className="text-center">{s.played}</TableCell>
+                <TableCell className="text-center">{s.won}</TableCell>
+                <TableCell className="text-center">{s.drawn}</TableCell>
+                <TableCell className="text-center">{s.lost}</TableCell>
+                <TableCell className="text-center">{s.goalsFor}</TableCell>
+                <TableCell className="text-center">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-semibold">{s.points}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </ScrollArea>
       {uniqueZonesInUse.length > 0 && (
-        <div className="mt-4 p-3 border rounded-md bg-muted/30">
-          <h4 className="text-sm font-semibold mb-2">Legend:</h4>
-          <ul className="space-y-1.5">
+        <div className="mt-6 p-4 border rounded-md bg-muted/30">
+          <h4 className="text-sm font-semibold mb-3">Legend:</h4>
+          <ul className="space-y-2">
             {uniqueZonesInUse.map(zone => (
               <li key={zone.id} className="flex items-center text-xs">
-                <span className={`w-3 h-3 rounded-sm mr-2 ${zone.colorClass.split(' ')[0]}`}></span>
+                <span className={`w-3.5 h-3.5 rounded-sm mr-2.5 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
                 <span>{zone.name} (Ranks {zone.rankMin}-{zone.rankMax})</span>
               </li>
             ))}
