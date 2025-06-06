@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Moon, Sun, Lock, Unlock, ShieldCheck, Settings2 } from 'lucide-react';
+import { Moon, Sun, Lock, Unlock, Zap, Settings2 } from 'lucide-react'; // Changed ShieldCheck to Zap
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,7 +59,7 @@ export default function AppHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
-          <ShieldCheck className="h-8 w-8 mr-2 text-primary" />
+          <Zap className="h-8 w-8 mr-2 text-primary" /> {/* Changed ShieldCheck to Zap */}
           <h1 className="text-2xl font-bold font-headline">
             SAP <span className="text-sm font-normal text-muted-foreground">Gestor de Torneos</span>
           </h1>
