@@ -63,18 +63,18 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
     <>
       <ScrollArea className="max-h-[60vh] rounded-md border">
         <Table className="table-fixed w-full">
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="text-center w-20 px-2 py-3">#</TableHead>
-              <TableHead className="px-3 py-3">Equipo</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">PJ</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">G</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">E</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">P</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">GF</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">GC</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">DG</TableHead>
-              <TableHead className="text-center w-12 px-2 py-3">Pts</TableHead>
+              <TableHead className="text-center font-semibold w-20 px-2 py-3">#</TableHead>
+              <TableHead className="font-semibold px-3 py-3">Equipo</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">PJ</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">G</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">E</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">P</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">GF</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">GC</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">DG</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-2 py-3">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -87,18 +87,18 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
                       title={s.classificationZoneName || 'Zona de Clasificación'}
                     ></div>
                   )}
-                  <span className="ml-3"> 
+                  <span className="ml-4"> 
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
                 <TableCell className="font-medium px-3 py-3">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.played}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.won}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.drawn}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.lost}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.goalsFor}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center px-2 py-3">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.played}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.won}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.drawn}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.lost}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.goalsFor}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center font-medium px-2 py-3">{s.goalDifference}</TableCell>
                 <TableCell className="text-center font-semibold px-2 py-3">{s.points}</TableCell>
               </TableRow>
             ))}
