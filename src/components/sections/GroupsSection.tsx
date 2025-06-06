@@ -61,20 +61,20 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
 
   return (
     <>
-      <ScrollArea className="max-h-[450px] rounded-md border">
+      <ScrollArea className="max-h-[60vh] rounded-md border">
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center w-20 px-2">#</TableHead>
-              <TableHead className="px-3">Equipo</TableHead>
-              <TableHead className="text-center w-12 px-1">PJ</TableHead>
-              <TableHead className="text-center w-12 px-1">G</TableHead>
-              <TableHead className="text-center w-12 px-1">E</TableHead>
-              <TableHead className="text-center w-12 px-1">P</TableHead>
-              <TableHead className="text-center w-12 px-1">GF</TableHead>
-              <TableHead className="text-center w-12 px-1">GC</TableHead>
-              <TableHead className="text-center w-12 px-1">DG</TableHead>
-              <TableHead className="text-center w-12 px-1">Pts</TableHead>
+              <TableHead className="text-center w-20 px-2 py-3">#</TableHead>
+              <TableHead className="px-3 py-3">Equipo</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">PJ</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">G</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">E</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">P</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">GF</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">GC</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">DG</TableHead>
+              <TableHead className="text-center w-12 px-1 py-3">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -617,5 +617,7 @@ export default function GroupsSection() {
   );
 }
 
+
+    
 
     
