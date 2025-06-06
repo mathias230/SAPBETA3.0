@@ -62,44 +62,44 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
   return (
     <>
       <ScrollArea className="max-h-[450px] rounded-md border">
-        <Table className="table-fixed">
+        <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center w-20">#</TableHead>
-              <TableHead>Equipo</TableHead>
-              <TableHead className="text-center w-12">PJ</TableHead>
-              <TableHead className="text-center w-12">G</TableHead>
-              <TableHead className="text-center w-12">E</TableHead>
-              <TableHead className="text-center w-12">P</TableHead>
-              <TableHead className="text-center w-12">GF</TableHead>
-              <TableHead className="text-center w-12">GC</TableHead>
-              <TableHead className="text-center w-12">DG</TableHead>
-              <TableHead className="text-center w-12">Pts</TableHead>
+              <TableHead className="text-center w-20 px-2">#</TableHead>
+              <TableHead className="px-3">Equipo</TableHead>
+              <TableHead className="text-center w-12 px-1">PJ</TableHead>
+              <TableHead className="text-center w-12 px-1">G</TableHead>
+              <TableHead className="text-center w-12 px-1">E</TableHead>
+              <TableHead className="text-center w-12 px-1">P</TableHead>
+              <TableHead className="text-center w-12 px-1">GF</TableHead>
+              <TableHead className="text-center w-12 px-1">GC</TableHead>
+              <TableHead className="text-center w-12 px-1">DG</TableHead>
+              <TableHead className="text-center w-12 px-1">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {standings.map((s, index) => (
               <TableRow key={s.teamId}>
-                <TableCell className="font-medium text-left relative">
+                <TableCell className="font-medium text-left relative px-2 py-3">
                   {s.zoneColorClass && (
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-2 ${s.zoneColorClass.split(' ')[0]}`}
+                      className={`absolute left-0 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
                       title={s.classificationZoneName || 'Zona de Clasificación'}
                     ></div>
                   )}
-                  <span className="ml-4"> 
+                  <span className="ml-3"> 
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
-                <TableCell className="font-medium truncate">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center">{s.played}</TableCell>
-                <TableCell className="text-center">{s.won}</TableCell>
-                <TableCell className="text-center">{s.drawn}</TableCell>
-                <TableCell className="text-center">{s.lost}</TableCell>
-                <TableCell className="text-center">{s.goalsFor}</TableCell>
-                <TableCell className="text-center">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center">{s.goalDifference}</TableCell>
-                <TableCell className="text-center font-semibold">{s.points}</TableCell>
+                <TableCell className="font-medium px-3 py-3">{getTeamName(s.teamId)}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.played}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.won}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.drawn}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.lost}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.goalsFor}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center px-1 py-3">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-semibold px-1 py-3">{s.points}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -456,18 +456,22 @@ export default function GroupsSection() {
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
           <DialogContent className="max-w-3xl">
-            <DialogHeader className="flex flex-row justify-between items-center pr-6">
-              <DialogTitle className="flex items-center text-xl">
-                <ListChecks className="mr-2 h-5 w-5 text-primary" />
-                Clasificación: {viewingGroup?.name}
-              </DialogTitle>
-              <Button variant="outline" size="sm" onClick={() => toast({title: "Funcionalidad no implementada", description: "Tomar foto individual aún no está disponible."})}>
-                <Camera className="mr-2 h-4 w-4" /> Tomar Foto
+            <DialogHeader className="flex flex-row justify-between items-start pr-6 pb-4 border-b mb-4">
+                <div>
+                    <DialogTitle className="flex items-center text-xl mb-1">
+                        <ListChecks className="mr-2 h-5 w-5 text-primary" />
+                        Clasificación: {viewingGroup?.name}
+                    </DialogTitle>
+                    <DialogDescription>Tabla de posiciones y zonas del grupo.</DialogDescription>
+                </div>
+              <Button variant="ghost" size="icon" onClick={() => toast({title: "Funcionalidad no implementada", description: "Tomar foto individual aún no está disponible."})}>
+                <Camera className="h-5 w-5" />
+                <span className="sr-only">Tomar Foto</span>
               </Button>
             </DialogHeader>
             {viewingStandingsGroupId && (
-              <div className="space-y-6 py-4">
-                <div id={`group-standings-${viewingStandingsGroupId}`} className="p-1 bg-card rounded-md">
+              <div className="space-y-6 py-2">
+                <div id={`group-standings-${viewingStandingsGroupId}`} className="bg-card rounded-md">
                   <StandingsTable 
                     standings={viewingGroupStandings} 
                     getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
@@ -475,8 +479,8 @@ export default function GroupsSection() {
                   />
                 </div>
                 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <Card className="mt-2">
+                  <CardHeader className="flex flex-row items-center justify-between pb-3 pt-4 px-4">
                     <CardTitle className="text-lg flex items-center">
                       <Palette className="mr-2 h-5 w-5 text-primary" />
                       Zonas de Clasificación de {viewingGroup?.name}
@@ -487,7 +491,7 @@ export default function GroupsSection() {
                       </Button>
                     )}
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="px-4 pb-4">
                     {(viewingGroupClassificationZones || []).length === 0 ? (
                       <p className="text-sm text-muted-foreground">No se han configurado zonas de clasificación para este grupo.</p>
                     ) : (
@@ -512,7 +516,7 @@ export default function GroupsSection() {
                     const groupName = viewingGroup ? viewingGroup.name.replace(/\s+/g, '_') : 'Grupo'; 
                     exportElementAsPNG(`group-standings-${viewingStandingsGroupId}`, `${groupName}-clasificacion.png`);
                   }}
-                  variant="outline" 
+                  variant="default" 
                   disabled={!viewingStandingsGroupId || viewingGroupStandings.length === 0}
                 >
                   <Download className="mr-2 h-4 w-4" />Exportar Clasificación PNG
@@ -612,3 +616,6 @@ export default function GroupsSection() {
     </Card>
   );
 }
+
+
+    
