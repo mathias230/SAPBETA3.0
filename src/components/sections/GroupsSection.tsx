@@ -68,7 +68,10 @@ export function StandingsTable({ standings, getTeamName, classificationZones, gr
   const tableId = groupName ? `standings-table-${groupName.replace(/\s+/g, '-')}` : undefined;
 
   return (
-    <div className={`bg-card rounded-md ${isMultiExport ? 'p-4 shadow-md border' : ''}`} id={tableId}>
+    <div
+      className={`rounded-md ${isMultiExport ? 'p-4 shadow-md border bg-card text-card-foreground' : 'bg-card text-card-foreground'}`}
+      id={tableId}
+    >
       {groupName && isMultiExport && <h3 className="text-lg font-semibold mb-3 text-center">{groupName}</h3>}
       <ScrollArea className={`${isMultiExport ? '' : 'max-h-[60vh]'} rounded-md border`}>
         <Table className="w-full table-fixed">
@@ -496,14 +499,13 @@ export default function GroupsSection() {
       toast({ title: "Selección Vacía", description: "Selecciona al menos un grupo para exportar.", variant: "default" });
       return;
     }
-    // Temporarily show the hidden div
     if (multiExportRef.current) {
       multiExportRef.current.style.display = 'block';
-      // Ensure content is rendered before capturing
-      await new Promise(resolve => setTimeout(resolve, 500)); 
+      await new Promise(resolve => setTimeout(resolve, 100)); // Short delay for rendering
       exportElementAsPNG('multi-group-export-container', 'Multi-Grupo-Clasificaciones.png');
-      multiExportRef.current.style.display = 'none'; // Hide it again
-      clearSelectedGroupsForExport();
+      await new Promise(resolve => setTimeout(resolve, 50)); // Ensure export is done
+      multiExportRef.current.style.display = 'none'; 
+      // clearSelectedGroupsForExport(); // Optionally clear selection after export
     } else {
       toast({ title: "Error de Exportación", description: "No se pudo encontrar el contenedor de exportación.", variant: "destructive" });
     }
@@ -787,7 +789,7 @@ export default function GroupsSection() {
             </DialogHeader>
             {viewingStandingsGroupId && (
               <div className="space-y-6 py-2">
-                <div id={`group-standings-${viewingStandingsGroupId}`} className="bg-card rounded-md">
+                <div id={`group-standings-${viewingStandingsGroupId}`} className="bg-card text-card-foreground rounded-md">
                   <StandingsTable 
                     standings={viewingGroupStandings} 
                     getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
@@ -944,7 +946,6 @@ export default function GroupsSection() {
           />
         )}
 
-        {/* Hidden container for multi-group export */}
         <div ref={multiExportRef} id="multi-group-export-container" style={{ display: 'none', position: 'absolute', left: '-9999px', top: '-9999px' }} className="p-4 bg-background space-y-8">
           {selectedGroupIdsForExport.map(groupId => {
             const group = groups.find(g => g.id === groupId);
@@ -972,3 +973,4 @@ export default function GroupsSection() {
     </Card>
   );
 }
+
