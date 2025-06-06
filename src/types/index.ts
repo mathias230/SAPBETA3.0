@@ -57,6 +57,7 @@ export interface League {
     rounds: 1 | 2; 
   };
   classificationZones: ClassificationZone[];
+  matchGenerationMode: 'automatic' | 'manual'; // Added for league
 }
 
 export interface KnockoutRound {
@@ -117,7 +118,7 @@ export interface TournamentActions {
   setGroupMatchGenerationMode: (groupId: string, mode: 'automatic' | 'manual') => void;
   setGroupRounds: (groupId: string, rounds: 1 | 2) => void;
   clearGroupMatches: (groupId: string) => void;
-  generateGroupMatches: (groupId: string) => void; // Will now respect group.rounds and group.matchGenerationMode
+  generateGroupMatches: (groupId: string) => void; 
   addManualMatchToGroup: (groupId: string, teamAId: string, teamBId: string) => void;
   removeManualMatchFromGroup: (groupId: string, matchId: string) => void;
 
@@ -126,12 +127,17 @@ export interface TournamentActions {
   removeGroupClassificationZone: (groupId: string, zoneId: string) => void;
 
   // League
-  setupLeague: (name: string, teamIds: string[], rounds: 1 | 2) => void;
+  setupLeague: (name: string, teamIds: string[], rounds: 1 | 2, matchGenerationMode?: 'automatic' | 'manual') => void; // Added matchGenerationMode
   deleteLeague: () => void;
-  generateLeagueMatches: () => void;
+  generateLeagueMatches: () => void; // Will respect matchGenerationMode
   updateLeagueMatchScore: (matchId: string, scoreA: number, scoreB: number) => void;
   addLeagueClassificationZone: (zone: Omit<ClassificationZone, 'id'>) => void;
   removeLeagueClassificationZone: (zoneId: string) => void;
+  setLeagueMatchGenerationMode: (mode: 'automatic' | 'manual') => void; // New
+  addManualMatchToLeague: (teamAId: string, teamBId: string) => void; // New
+  removeManualMatchFromLeague: (matchId: string) => void; // New
+  clearLeagueMatches: () => void; // New
+  setLeagueRounds: (rounds: 1 | 2) => void; // New, for automatic mode config
 
   // Knockout
   setupKnockoutStage: (name: string, numTeams: number, teamIds: string[]) => void;
@@ -148,3 +154,4 @@ export type StoreState = TournamentDataState & TournamentActions;
 
 // Constants
 export const ADMIN_PASSWORD = "123";
+
