@@ -52,13 +52,21 @@ interface StandingsTableProps {
   standings: Standing[];
   getTeamName: (teamId: string) => string;
   classificationZones: ClassificationZone[];
-  groupName?: string; // Optional group name for multi-export titles
-  isMultiExport?: boolean; // Flag to adjust styling for multi-export
+  groupName?: string; 
+  isMultiExport?: boolean; 
 }
 
 export function StandingsTable({ standings, getTeamName, classificationZones, groupName, isMultiExport }: StandingsTableProps) {
-  if (standings.length === 0) {
+  if (standings.length === 0 && !isMultiExport) { // Keep empty message for non-export view
     return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
+  }
+   if (standings.length === 0 && isMultiExport) { 
+    return (
+      <div className="p-4 shadow-md border bg-card text-card-foreground rounded-md">
+        {groupName && <h3 className="text-lg font-semibold mb-3 text-center">{groupName}</h3>}
+        <p className="text-muted-foreground p-4 text-center">No hay datos de clasificación para este grupo.</p>
+      </div>
+    );
   }
   
   const activeZones = classificationZones.filter(zone => 
@@ -79,13 +87,13 @@ export function StandingsTable({ standings, getTeamName, classificationZones, gr
             <TableRow>
               <TableHead className="text-center font-semibold w-20 px-2 py-3">#</TableHead>
               <TableHead className="font-semibold px-3 py-3">Equipo</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">PJ</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">G</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">E</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">P</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">GF</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">GC</TableHead>
-              <TableHead className="text-center font-semibold w-12 px-2 py-3">DG</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">PJ</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">G</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">E</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">P</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">GF</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">GC</TableHead>
+              <TableHead className="text-center font-semibold w-12 px-1 py-3">DG</TableHead>
               <TableHead className="text-center font-semibold w-12 px-2 py-3">Pts</TableHead>
             </TableRow>
           </TableHeader>
@@ -104,25 +112,25 @@ export function StandingsTable({ standings, getTeamName, classificationZones, gr
                   </span>
                 </TableCell>
                 <TableCell className="font-medium px-3 py-3">{getTeamName(s.teamId)}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.played}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.won}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.drawn}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.lost}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.goalsFor}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.goalsAgainst}</TableCell>
-                <TableCell className="text-center font-medium px-2 py-3">{s.goalDifference}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.played}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.won}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.drawn}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.lost}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.goalsFor}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.goalsAgainst}</TableCell>
+                <TableCell className="text-center font-medium px-1 py-3">{s.goalDifference}</TableCell>
                 <TableCell className="text-center font-semibold px-2 py-3">{s.points}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </ScrollArea>
-      {activeZones.length > 0 && !isMultiExport && (
-        <div className="mt-4 p-3 border rounded-md space-y-1 text-xs text-muted-foreground">
-          <h4 className="font-semibold text-sm text-foreground mb-1.5">Leyenda de Zonas:</h4>
+      {activeZones.length > 0 && (
+        <div className={`mt-4 p-3 border rounded-md space-y-1 text-xs ${isMultiExport ? 'text-card-foreground/80' : 'text-muted-foreground'}`}>
+          <h4 className={`font-semibold text-sm ${isMultiExport ? 'text-card-foreground' : 'text-foreground'} mb-1.5`}>Leyenda de Zonas:</h4>
           {activeZones.map(zone => (
             <div key={zone.id} className="flex items-center py-1">
-              <span className={`w-3 h-3 rounded-sm mr-2 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
+              <span className={`w-3 h-3 rounded-sm mr-2 border ${isMultiExport ? 'border-card-foreground/30' : 'border-foreground/20'} ${zone.colorClass.split(' ')[0]}`}></span>
               <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
             </div>
           ))}
@@ -500,12 +508,17 @@ export default function GroupsSection() {
       return;
     }
     if (multiExportRef.current) {
-      multiExportRef.current.style.display = 'block';
-      await new Promise(resolve => setTimeout(resolve, 100)); // Short delay for rendering
+      multiExportRef.current.style.display = 'block'; // Make it visible for rendering
+      multiExportRef.current.classList.add('dark'); // Ensure dark theme if active
+      
+      await new Promise(resolve => setTimeout(resolve, 100)); 
+      
       exportElementAsPNG('multi-group-export-container', 'Multi-Grupo-Clasificaciones.png');
-      await new Promise(resolve => setTimeout(resolve, 50)); // Ensure export is done
+      
+      await new Promise(resolve => setTimeout(resolve, 100)); // Ensure export is done
+      
       multiExportRef.current.style.display = 'none'; 
-      // clearSelectedGroupsForExport(); // Optionally clear selection after export
+      multiExportRef.current.classList.remove('dark');
     } else {
       toast({ title: "Error de Exportación", description: "No se pudo encontrar el contenedor de exportación.", variant: "destructive" });
     }
@@ -946,7 +959,12 @@ export default function GroupsSection() {
           />
         )}
 
-        <div ref={multiExportRef} id="multi-group-export-container" style={{ display: 'none', position: 'absolute', left: '-9999px', top: '-9999px' }} className="p-4 bg-background space-y-8">
+        <div 
+          ref={multiExportRef} 
+          id="multi-group-export-container" 
+          style={{ display: 'none', position: 'absolute', left: '-9999px', top: '-9999px', width: '896px' }} 
+          className="p-4 bg-background space-y-8"
+        >
           {selectedGroupIdsForExport.map(groupId => {
             const group = groups.find(g => g.id === groupId);
             if (!group) return null;
