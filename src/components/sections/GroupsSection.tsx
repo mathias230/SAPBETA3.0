@@ -47,20 +47,25 @@ export const classificationColorOptions = [
 interface StandingsTableProps {
   standings: Standing[];
   getTeamName: (teamId: string) => string;
+  classificationZones: ClassificationZone[];
 }
 
-export function StandingsTable({ standings, getTeamName }: StandingsTableProps) {
+export function StandingsTable({ standings, getTeamName, classificationZones }: StandingsTableProps) {
   if (standings.length === 0) {
     return <p className="text-muted-foreground p-4 text-center">No hay partidos jugados o clasificaciones para mostrar.</p>;
   }
   
+  const activeZones = classificationZones.filter(zone => 
+    standings.some(s => s.rank !== undefined && s.rank >= zone.rankMin && s.rank <= zone.rankMax)
+  );
+
   return (
     <>
       <ScrollArea className="max-h-[450px] rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center w-[50px]">#</TableHead>
+              <TableHead className="text-center w-16">#</TableHead>
               <TableHead>Equipo</TableHead>
               <TableHead className="text-center">PJ</TableHead>
               <TableHead className="text-center">G</TableHead>
@@ -75,14 +80,14 @@ export function StandingsTable({ standings, getTeamName }: StandingsTableProps) 
           <TableBody>
             {standings.map((s, index) => (
               <TableRow key={s.teamId}>
-                <TableCell className="font-medium text-center relative px-0">
+                <TableCell className="font-medium text-left relative pl-6 pr-2 py-2">
                   {s.zoneColorClass && (
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
+                      className={`absolute left-2 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
                       title={s.classificationZoneName || 'Zona de Clasificación'}
                     ></div>
                   )}
-                  <span className="ml-3">
+                  <span>
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
@@ -100,6 +105,17 @@ export function StandingsTable({ standings, getTeamName }: StandingsTableProps) 
           </TableBody>
         </Table>
       </ScrollArea>
+      {activeZones.length > 0 && (
+        <div className="mt-4 p-3 border rounded-md space-y-1.5 text-xs text-muted-foreground">
+          <h4 className="font-semibold text-sm text-foreground mb-1">Leyenda de Zonas:</h4>
+          {activeZones.map(zone => (
+            <div key={zone.id} className="flex items-center">
+              <span className={`w-3 h-3 rounded-sm mr-2 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
+              <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -208,7 +224,6 @@ export default function GroupsSection() {
   const openManageZonesModal = (group: GroupType) => {
     setSelectedGroupForZones(group);
     setIsDefineZoneModalOpen(true);
-    // Reset form fields when opening for a new group or re-opening
     setNewZoneName('');
     setNewZoneMinRank('');
     setNewZoneMaxRank('');
@@ -252,7 +267,6 @@ export default function GroupsSection() {
     setNewZoneMinRank('');
     setNewZoneMaxRank('');
     setNewZoneColorClass(classificationColorOptions[0].value);
-    // Refresh selectedGroupForZones to reflect new zone in the modal list
     const updatedGroup = useTournamentStore.getState().groups.find(g => g.id === selectedGroupForZones.id);
     if (updatedGroup) setSelectedGroupForZones(updatedGroup);
   };
@@ -441,7 +455,7 @@ export default function GroupsSection() {
         </div>
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
-          <DialogContent className="max-w-3xl"> {/* Increased width */}
+          <DialogContent className="max-w-3xl">
             <DialogHeader className="flex flex-row justify-between items-center">
               <DialogTitle className="flex items-center text-xl">
                 <ListChecks className="mr-2 h-5 w-5 text-primary" />
@@ -457,6 +471,7 @@ export default function GroupsSection() {
                   <StandingsTable 
                     standings={viewingGroupStandings} 
                     getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
+                    classificationZones={viewingGroupClassificationZones}
                   />
                 </div>
                 
@@ -468,16 +483,16 @@ export default function GroupsSection() {
                     </CardTitle>
                     {isAdmin && viewingGroup && (
                       <Button size="sm" variant="outline" onClick={() => openManageZonesModal(viewingGroup)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />Añadir/Gestionar Zona
+                        <Settings className="mr-2 h-4 w-4" />Añadir/Gestionar Zona
                       </Button>
                     )}
                   </CardHeader>
                   <CardContent>
-                    {viewingGroupClassificationZones.length === 0 ? (
+                    {(viewingGroupClassificationZones || []).length === 0 ? (
                       <p className="text-sm text-muted-foreground">No se han configurado zonas de clasificación para este grupo.</p>
                     ) : (
                       <ul className="space-y-2">
-                        {viewingGroupClassificationZones.map(zone => (
+                        {(viewingGroupClassificationZones || []).map(zone => (
                           <li key={zone.id} className="flex items-center text-sm p-2 border rounded-md">
                             <span className={`w-4 h-4 rounded-sm mr-3 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
                             <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
@@ -569,7 +584,7 @@ export default function GroupsSection() {
                         {classificationColorOptions.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>
                             <div className="flex items-center">
-                              <span className={`w-3 h-3 rounded-sm mr-2 ${opt.value.split(' ')[0]}`}></span>
+                              <span className={`w-3 h-3 rounded-sm mr-2 border ${opt.value.split(' ')[0]}`}></span>
                               {opt.label}
                             </div>
                           </SelectItem>
