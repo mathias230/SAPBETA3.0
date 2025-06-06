@@ -65,29 +65,29 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center w-16">#</TableHead>
+              <TableHead className="text-center w-20">#</TableHead>
               <TableHead>Equipo</TableHead>
-              <TableHead className="text-center w-14">PJ</TableHead>
-              <TableHead className="text-center w-14">G</TableHead>
-              <TableHead className="text-center w-14">E</TableHead>
-              <TableHead className="text-center w-14">P</TableHead>
-              <TableHead className="text-center w-14">GF</TableHead>
-              <TableHead className="text-center w-14">GC</TableHead>
-              <TableHead className="text-center w-14">DG</TableHead>
-              <TableHead className="text-center w-14">Pts</TableHead>
+              <TableHead className="text-center w-12">PJ</TableHead>
+              <TableHead className="text-center w-12">G</TableHead>
+              <TableHead className="text-center w-12">E</TableHead>
+              <TableHead className="text-center w-12">P</TableHead>
+              <TableHead className="text-center w-12">GF</TableHead>
+              <TableHead className="text-center w-12">GC</TableHead>
+              <TableHead className="text-center w-12">DG</TableHead>
+              <TableHead className="text-center w-12">Pts</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {standings.map((s, index) => (
               <TableRow key={s.teamId}>
-                <TableCell className="font-medium text-left relative pl-5 pr-2 py-2">
+                <TableCell className="font-medium text-left relative">
                   {s.zoneColorClass && (
                     <div
-                      className={`absolute left-1.5 top-0 bottom-0 w-1.5 ${s.zoneColorClass.split(' ')[0]}`}
+                      className={`absolute left-0 top-0 bottom-0 w-2 ${s.zoneColorClass.split(' ')[0]}`}
                       title={s.classificationZoneName || 'Zona de Clasificación'}
                     ></div>
                   )}
-                  <span>
+                  <span className="ml-4"> 
                     {(s.rank || index + 1)}.
                   </span>
                 </TableCell>
@@ -106,10 +106,10 @@ export function StandingsTable({ standings, getTeamName, classificationZones }: 
         </Table>
       </ScrollArea>
       {activeZones.length > 0 && (
-        <div className="mt-4 p-3 border rounded-md space-y-1.5 text-xs text-muted-foreground">
-          <h4 className="font-semibold text-sm text-foreground mb-1">Leyenda de Zonas:</h4>
+        <div className="mt-4 p-3 border rounded-md space-y-1 text-xs text-muted-foreground">
+          <h4 className="font-semibold text-sm text-foreground mb-1.5">Leyenda de Zonas:</h4>
           {activeZones.map(zone => (
-            <div key={zone.id} className="flex items-center">
+            <div key={zone.id} className="flex items-center py-0.5">
               <span className={`w-3 h-3 rounded-sm mr-2 border border-foreground/20 ${zone.colorClass.split(' ')[0]}`}></span>
               <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
             </div>
@@ -456,7 +456,7 @@ export default function GroupsSection() {
 
         <Dialog open={!!viewingStandingsGroupId} onOpenChange={(isOpen) => !isOpen && setViewingStandingsGroupId(null)}>
           <DialogContent className="max-w-3xl">
-            <DialogHeader className="flex flex-row justify-between items-center pr-6"> {/* Added pr-6 to avoid overlap with close button */}
+            <DialogHeader className="flex flex-row justify-between items-center pr-6">
               <DialogTitle className="flex items-center text-xl">
                 <ListChecks className="mr-2 h-5 w-5 text-primary" />
                 Clasificación: {viewingGroup?.name}
