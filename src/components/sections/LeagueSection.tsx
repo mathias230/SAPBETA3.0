@@ -281,95 +281,94 @@ export default function LeagueSection() {
         </CardHeader>
       </Card>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 shadow-md">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-                <CardTitle className="text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Partidos</CardTitle>
-                {isAdmin && (
-                     <Button onClick={() => { generateLeagueMatches(); toast({ title: "Partidos Re-generados" }); }} className="w-auto" variant="outline" size="sm">
-                        <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar
-                    </Button>
-                )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {league.matches.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay partidos generados.</p> : (
-              <ScrollArea className="h-[400px] border rounded-md p-0 md:h-[calc(100vh-300px)]"> {/* Adjusted height for larger screens */}
-                <ul className="space-y-0">
-                  {league.matches.map((match, matchIndex) => {
-                    const teamA = getTeamById(match.teamAId);
-                    const teamB = getTeamById(match.teamBId);
-                    return (
-                      <li key={match.id} className={`p-3 ${matchIndex < league.matches.length - 1 ? 'border-b' : ''} bg-card hover:bg-muted/30`}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-medium text-sm">{teamA?.name || 'TBA'} vs {teamB?.name || 'TBA'}</span>
-                          {!isAdmin && match.played && (
-                            <span className="font-semibold text-primary text-sm">{match.scoreA} - {match.scoreB}</span>
-                          )}
-                          {!isAdmin && !match.played && (
-                            <span className="text-xs text-muted-foreground">Pendiente</span>
+      <Card className="w-full shadow-md">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+              <CardTitle className="text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary" />Partidos</CardTitle>
+              {isAdmin && (
+                    <Button onClick={() => { generateLeagueMatches(); toast({ title: "Partidos Re-generados" }); }} className="w-auto" variant="outline" size="sm">
+                      <RefreshCcw className="mr-2 h-3 w-3"/>Re-generar
+                  </Button>
+              )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {league.matches.length === 0 ? <p className="text-muted-foreground text-center py-4">No hay partidos generados.</p> : (
+            <ScrollArea className="h-[400px] border rounded-md p-0 md:h-[calc(100vh-450px)]"> {/* Adjusted height */}
+              <ul className="space-y-0">
+                {league.matches.map((match, matchIndex) => {
+                  const teamA = getTeamById(match.teamAId);
+                  const teamB = getTeamById(match.teamBId);
+                  return (
+                    <li key={match.id} className={`p-3 ${matchIndex < league.matches.length - 1 ? 'border-b' : ''} bg-card hover:bg-muted/30`}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-medium text-sm">{teamA?.name || 'TBA'} vs {teamB?.name || 'TBA'}</span>
+                        {!isAdmin && match.played && (
+                          <span className="font-semibold text-primary text-sm">{match.scoreA} - {match.scoreB}</span>
+                        )}
+                        {!isAdmin && !match.played && (
+                          <span className="text-xs text-muted-foreground">Pendiente</span>
+                        )}
+                      </div>
+                      {isAdmin && (
+                        <div className="mt-1 flex items-center space-x-2">
+                          <Input
+                            type="number"
+                            placeholder="Res. 1"
+                            value={matchScoresInput[match.id]?.scoreA ?? ''}
+                            onChange={(e) => handleMatchScoreInputChange(match.id, 'A', e.target.value)}
+                            className="w-20 h-8 text-sm"
+                            min="0"
+                          />
+                          <span>-</span>
+                          <Input
+                            type="number"
+                            placeholder="Res. 2"
+                            value={matchScoresInput[match.id]?.scoreB ?? ''}
+                            onChange={(e) => handleMatchScoreInputChange(match.id, 'B', e.target.value)}
+                            className="w-20 h-8 text-sm"
+                            min="0"
+                          />
+                          <Button size="sm" className="h-8 text-xs px-3" onClick={() => handleSaveMatchScore(match.id)}>
+                            <Save className="mr-1 h-3 w-3" /> Guardar
+                          </Button>
+                          {match.played && (
+                              <span className="text-xs font-semibold text-primary ml-auto">({match.scoreA} - {match.scoreB})</span>
                           )}
                         </div>
-                        {isAdmin && (
-                          <div className="mt-1 flex items-center space-x-2">
-                            <Input
-                              type="number"
-                              placeholder="Res. 1"
-                              value={matchScoresInput[match.id]?.scoreA ?? ''}
-                              onChange={(e) => handleMatchScoreInputChange(match.id, 'A', e.target.value)}
-                              className="w-20 h-8 text-sm"
-                              min="0"
-                            />
-                            <span>-</span>
-                            <Input
-                              type="number"
-                              placeholder="Res. 2"
-                              value={matchScoresInput[match.id]?.scoreB ?? ''}
-                              onChange={(e) => handleMatchScoreInputChange(match.id, 'B', e.target.value)}
-                              className="w-20 h-8 text-sm"
-                              min="0"
-                            />
-                            <Button size="sm" className="h-8 text-xs px-3" onClick={() => handleSaveMatchScore(match.id)}>
-                              <Save className="mr-1 h-3 w-3" /> Guardar
-                            </Button>
-                            {match.played && (
-                               <span className="text-xs font-semibold text-primary ml-auto">({match.scoreA} - {match.scoreB})</span>
-                            )}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="lg:col-span-1 shadow-md">
-          <CardHeader>
-            <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Clasificación</CardTitle>
-          </CardHeader>
-          <CardContent id="league-standings-export" className="p-1 bg-card rounded-md">
-            <StandingsTable 
-                standings={leagueStandings} 
-                getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
-                classificationZones={league.classificationZones || []}
-             />
-          </CardContent>
-           <CardFooter className="pt-4 border-t">
-                <Button 
-                  onClick={() => exportElementAsPNG(`league-standings-export`, `${league.name.replace(/\s+/g, '_')}-clasificacion.png`)}
-                  variant="outline" 
-                  className="w-full"
-                  disabled={leagueStandings.length === 0}
-                >
-                  <Download className="mr-2 h-4 w-4" />Exportar Clasificación PNG
-                </Button>
-            </CardFooter>
-        </Card>
-      </div>
+      <Card className="w-full shadow-md mt-6"> {/* Added mt-6 for spacing */}
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Clasificación</CardTitle>
+        </CardHeader>
+        <CardContent id="league-standings-export" className="p-1 bg-card rounded-md">
+          <StandingsTable 
+              standings={leagueStandings} 
+              getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
+              classificationZones={league.classificationZones || []}
+            />
+        </CardContent>
+          <CardFooter className="pt-4 border-t">
+              <Button 
+                onClick={() => exportElementAsPNG(`league-standings-export`, `${league.name.replace(/\s+/g, '_')}-clasificacion.png`)}
+                variant="outline" 
+                className="w-full"
+                disabled={leagueStandings.length === 0}
+              >
+                <Download className="mr-2 h-4 w-4" />Exportar Clasificación PNG
+              </Button>
+          </CardFooter>
+      </Card>
+
 
       {isAdmin && league && (
           <Dialog open={isDefineZoneModalOpen} onOpenChange={setIsDefineZoneModalOpen}>
@@ -388,9 +387,9 @@ export default function LeagueSection() {
                         <span>{zone.name} (Puestos {zone.rankMin}-{zone.rankMax})</span>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive-foreground hover:bg-destructive/80">
-                               <X className="h-3 w-3" />
-                             </Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive-foreground hover:bg-destructive/80">
+                                <X className="h-3 w-3" />
+                              </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
