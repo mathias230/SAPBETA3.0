@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Download, ListOrdered, Edit, Archive } from 'lucide-react';
+import { GitFork, PlusCircle, Trash2, Users, Save, Download, ListOrdered, Edit, Archive } from 'lucide-react'; // Removed Star
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -396,7 +396,7 @@ export default function KnockoutSection() {
                 <div key={`slot-${index}`} className="flex items-center space-x-3 mb-3">
                   <Label htmlFor={`slot-select-${index}`} className="w-24 text-sm">Llave {index + 1}:</Label>
                   <Select
-                    value={slotAssignments[index] || undefined} 
+                    value={slotAssignments[index] || ""} 
                     onValueChange={(teamId) => handleSlotAssignmentChange(index, teamId)}
                   >
                     <SelectTrigger id={`slot-select-${index}`} className="flex-grow">
@@ -499,7 +499,7 @@ export default function KnockoutSection() {
           {champion && (
             <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
               <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-red-500 mr-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 mr-2">
                   <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354l-4.502 2.825c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.007z" clipRule="evenodd" />
                 </svg>
                 ¡Campeón: {champion.name}!
