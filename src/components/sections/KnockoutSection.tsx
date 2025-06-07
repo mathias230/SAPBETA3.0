@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit } from 'lucide-react'; // Removed XCircle, Edit is used
+import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -52,7 +52,6 @@ const KnockoutMatchCard: React.FC<{
   useEffect(() => {
     setEditableTeamAId(match.teamAId);
     setEditableTeamBId(match.teamBId);
-    // Reset editing mode if match becomes played or teams become TBD externally
     if (match.played || match.teamAId === 'TBD' || match.teamBId === 'TBD' || match.teamAId === 'TBD_DELETED' || match.teamBId === 'TBD_DELETED') {
       setIsEditingTeams(false);
     }
@@ -101,7 +100,7 @@ const KnockoutMatchCard: React.FC<{
   };
 
   const handleCancelTeamEdit = () => {
-    setEditableTeamAId(match.teamAId); // Revert to original match teams
+    setEditableTeamAId(match.teamAId); 
     setEditableTeamBId(match.teamBId);
     setIsEditingTeams(false);
   };
@@ -110,7 +109,7 @@ const KnockoutMatchCard: React.FC<{
     <div className="bg-card border rounded-lg p-3 min-w-[240px] shadow">
       <div className="flex justify-between items-center mb-2">
         <p className="text-xs text-muted-foreground">{roundName} - Partido</p>
-        <div className="flex items-center space-x-2"> {/* Ensures spacing for multiple items */}
+        <div className="flex items-center space-x-2"> 
             {match.played && <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">Jugado</span>}
             {canEditTeams && !isEditingTeams && (
             <Button variant="outline" size="icon" className="h-7 w-7 p-1" onClick={() => setIsEditingTeams(true)} title="Editar Equipos">
@@ -180,12 +179,12 @@ const KnockoutMatchCard: React.FC<{
 export default function KnockoutSection() {
   const { 
     knockoutStage, teams, isAdmin, setupKnockoutStage, deleteKnockoutStage, 
-    updateKnockoutMatchScore, getTeamById, updateKnockoutMatchTeams // Added updateKnockoutMatchTeams
+    updateKnockoutMatchScore, getTeamById, updateKnockoutMatchTeams
   } = useTournamentStore();
   
   const [newStageName, setNewStageName] = useState('');
   const [numTeamsForStage, setNumTeamsForStage] = useState<string>("8");
-  const [slotAssignments, setSlotAssignments] = useState<string[]>(Array(8).fill('')); // For manual slot assignment
+  const [slotAssignments, setSlotAssignments] = useState<string[]>(Array(8).fill('')); 
   const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
 
   const { toast } = useToast();
@@ -193,35 +192,40 @@ export default function KnockoutSection() {
   const powerOfTwoOptions = [2, 4, 8, 16, 32];
 
   useEffect(() => {
-    // Initialize or reset slotAssignments when numTeamsForStage changes
     setSlotAssignments(Array(parseInt(numTeamsForStage)).fill(''));
   }, [numTeamsForStage]);
 
   useEffect(() => {
-    if (!knockoutStage) {
+    if (!knockoutStage || !knockoutStage.rounds) {
       setMatchScoresInput({});
       return;
     }
     const newScores: Record<string, { scoreA: string, scoreB: string }> = {};
     knockoutStage.rounds.forEach(round => {
-      round.matches.forEach(match => {
-        newScores[match.id] = {
-          scoreA: match.played && match.scoreA !== undefined ? String(match.scoreA) : '',
-          scoreB: match.played && match.scoreB !== undefined ? String(match.scoreB) : '',
-        };
-      });
+      if (round.matches) {
+        round.matches.forEach(match => {
+          newScores[match.id] = {
+            scoreA: match.played && match.scoreA !== undefined ? String(match.scoreA) : '',
+            scoreB: match.played && match.scoreB !== undefined ? String(match.scoreB) : '',
+          };
+        });
+      }
     });
     setMatchScoresInput(prevScores => {
       const mergedState = {...newScores};
+      if (knockoutStage && knockoutStage.rounds) {
         knockoutStage.rounds.forEach(round => {
+          if (round.matches) {
             round.matches.forEach(match => {
                 if (match.played && (prevScores[match.id]?.scoreA !== '' || prevScores[match.id]?.scoreB !== '')) {
-                    // This condition was a bit off, fixed to prioritize new scores if match is played
+                    // Prioritize new scores if match is played
                 } else if (prevScores[match.id] && !match.played ) {
                      mergedState[match.id] = prevScores[match.id];
                 }
             });
+          }
         });
+      }
       return mergedState;
     });
   }, [knockoutStage]);
@@ -240,7 +244,7 @@ export default function KnockoutSection() {
       return;
     }
     
-    const match = knockoutStage?.rounds.find(r => r.id === roundId)?.matches.find(m => m.id === matchId);
+    const match = knockoutStage?.rounds?.find(r => r.id === roundId)?.matches?.find(m => m.id === matchId);
     if (match && (match.teamAId === 'TBD' || match.teamBId === 'TBD' || match.teamAId === 'TBD_DELETED' || match.teamBId === 'TBD_DELETED')) {
         toast({ title: "Error", description: "No se puede registrar marcador si uno o ambos equipos son 'A Definir' o han sido eliminados.", variant: "destructive" });
         return;
@@ -265,24 +269,22 @@ export default function KnockoutSection() {
       return;
     }
     const numTeams = parseInt(numTeamsForStage);
-    const assignedTeams = slotAssignments.filter(id => id && id !== ''); // Get only non-empty assigned teams
+    const assignedTeams = slotAssignments.filter(id => id && id !== ''); 
     
     if (assignedTeams.length !== numTeams) {
       toast({ title: "Error", description: `Debe asignar exactamente ${numTeams} equipos a las llaves. Asignados: ${assignedTeams.length}.`, variant: "destructive" });
       return;
     }
-    // Check for duplicates in assigned teams (excluding empty slots)
     const uniqueAssignedTeams = new Set(assignedTeams);
     if (uniqueAssignedTeams.size !== assignedTeams.length) {
       toast({ title: "Error", description: "No puede asignar el mismo equipo a múltiples llaves.", variant: "destructive" });
       return;
     }
 
-    // Pass the slotAssignments directly as they are already in the desired order
     setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments); 
     toast({ title: "Fase Eliminatoria Creada", description: `La fase "${newStageName.trim()}" ha sido configurada.` });
     setNewStageName('');
-    setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); // Reset for next setup
+    setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); 
   };
   
   const champion = useMemo(() => {
@@ -293,7 +295,7 @@ export default function KnockoutSection() {
   }, [knockoutStage, getTeamById]);
 
   const handleExportBracket = () => {
-    if (knockoutStage) {
+    if (knockoutStage && knockoutStage.name) {
         const stageName = knockoutStage.name.replace(/\s+/g, '_') || 'Bracket';
         exportElementAsPNG('knockout-bracket-export-area', `${stageName}.png`);
     } else {
@@ -301,18 +303,16 @@ export default function KnockoutSection() {
     }
   };
 
-  // Handler for when a team is selected for a slot
   const handleSlotAssignmentChange = (index: number, teamId: string) => {
     const newAssignments = [...slotAssignments];
     
-    // If the selected teamId is already assigned to another slot, clear that other slot
-    if (teamId !== '') { // Only if a team is actually selected (not '-- Vacío --')
+    if (teamId !== '') { 
       const existingIndexForSelectedTeam = newAssignments.findIndex((id, i) => id === teamId && i !== index);
       if (existingIndexForSelectedTeam !== -1) {
-        newAssignments[existingIndexForSelectedTeam] = ''; // Clear the old slot
+        newAssignments[existingIndexForSelectedTeam] = ''; 
       }
     }
-    newAssignments[index] = teamId; // Assign to the current slot
+    newAssignments[index] = teamId; 
     setSlotAssignments(newAssignments);
   };
 
@@ -336,7 +336,6 @@ export default function KnockoutSection() {
               value={numTeamsForStage} 
               onValueChange={(value) => {
                 setNumTeamsForStage(value);
-                // No need to reset selectedTeamIdsForStage as it's replaced by slotAssignments
               }}
             >
               <SelectTrigger id="numTeamsStage"><SelectValue placeholder="Seleccionar número" /></SelectTrigger>
@@ -364,7 +363,6 @@ export default function KnockoutSection() {
                     <SelectContent>
                       <SelectItem value="">-- Vacío --</SelectItem>
                       {teams.map(team => (
-                          // No need to disable options here, handleSlotAssignmentChange handles de-duplication logic
                           <SelectItem key={team.id} value={team.id}> 
                             {team.name}
                           </SelectItem>
@@ -387,8 +385,8 @@ export default function KnockoutSection() {
               !newStageName.trim() ||
               teams.length < parseInt(numTeamsForStage) || 
               parseInt(numTeamsForStage) < 2 ||
-              slotAssignments.filter(id => id && id !== '').length !== parseInt(numTeamsForStage) || // Ensure all slots are filled
-              new Set(slotAssignments.filter(id => id && id !== '')).size !== slotAssignments.filter(id => id && id !== '').length // Ensure no duplicates among filled slots
+              slotAssignments.filter(id => id && id !== '').length !== parseInt(numTeamsForStage) || 
+              new Set(slotAssignments.filter(id => id && id !== '')).size !== slotAssignments.filter(id => id && id !== '').length
             }
           >
             <PlusCircle className="mr-2 h-4 w-4" />Crear Fase
@@ -425,7 +423,7 @@ export default function KnockoutSection() {
             <GitFork className="mr-2 h-6 w-6 text-primary" /> {knockoutStage.name}
           </CardTitle>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={handleExportBracket} disabled={knockoutStage.rounds.length === 0}>
+            <Button variant="outline" size="sm" onClick={handleExportBracket} disabled={!knockoutStage || !knockoutStage.rounds || knockoutStage.rounds.length === 0}>
                 <Download className="mr-2 h-4 w-4"/> Exportar Bracket
             </Button>
             {isAdmin && (
@@ -466,11 +464,11 @@ export default function KnockoutSection() {
         <CardContent id="knockout-bracket-export-area" className="bg-card">
           <ScrollArea className="pb-4">
             <div className="flex space-x-8 overflow-x-auto p-4"> 
-              {knockoutStage.rounds.map((round, roundIndex) => (
+              {knockoutStage && knockoutStage.rounds && knockoutStage.rounds.map((round, roundIndex) => (
                 <div key={round.id} className="flex flex-col items-center space-y-6 min-w-max">
                   <h3 className="text-lg font-semibold text-center sticky top-0 bg-background/80 backdrop-blur-sm py-2 px-4 rounded-md z-10">{round.name}</h3>
                   <div className="space-y-6 relative">
-                    {round.matches.map((match, matchIndex) => (
+                    {round.matches && round.matches.map((match, matchIndex) => (
                       <div key={match.id} className="flex items-center">
                         <KnockoutMatchCard 
                           match={match}
@@ -483,18 +481,18 @@ export default function KnockoutSection() {
                           initialScoreA={matchScoresInput[match.id]?.scoreA ?? ''}
                           initialScoreB={matchScoresInput[match.id]?.scoreB ?? ''}
                         />
-                        {roundIndex < knockoutStage.rounds.length - 1 && match.played && 
-                         knockoutStage.rounds[roundIndex+1] && knockoutStage.rounds[roundIndex+1].matches.some(
-                            nextMatch => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
+                        {knockoutStage && knockoutStage.rounds && roundIndex < knockoutStage.rounds.length - 1 && match.played && 
+                         knockoutStage.rounds[roundIndex+1] && knockoutStage.rounds[roundIndex+1].matches && knockoutStage.rounds[roundIndex+1].matches.some(
+                            (nextMatch: MatchType) => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
                                          nextMatch.teamBId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId)
                          ) && (
                           <div className="w-8 h-px bg-muted-foreground mx-2"></div>
                         )}
-                         {roundIndex < knockoutStage.rounds.length - 1 && match.played && 
-                            !knockoutStage.rounds[roundIndex+1]?.matches.some(
-                                nextMatch => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
+                         {knockoutStage && knockoutStage.rounds && roundIndex < knockoutStage.rounds.length - 1 && match.played && 
+                            (!knockoutStage.rounds[roundIndex+1]?.matches || !knockoutStage.rounds[roundIndex+1].matches.some(
+                                (nextMatch: MatchType) => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
                                              nextMatch.teamBId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId)
-                            ) && knockoutStage.championId !== (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) && (
+                            )) && knockoutStage.championId !== (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) && (
                             <div className="w-8 h-px bg-transparent mx-2"></div> 
                          )}
                       </div>
@@ -503,10 +501,12 @@ export default function KnockoutSection() {
                 </div>
               ))}
             </div>
-             {knockoutStage.rounds.length === 0 && <p className="text-muted-foreground text-center py-4">No hay rondas generadas.</p>}
+             {(!knockoutStage || !knockoutStage.rounds || knockoutStage.rounds.length === 0) && <p className="text-muted-foreground text-center py-4">No hay rondas generadas.</p>}
           </ScrollArea>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
