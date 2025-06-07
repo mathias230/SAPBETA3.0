@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { ListChecks, PlusCircle, Trash2, Users, RefreshCcw, Download, Save, Palette, Settings, X, Trophy, SlidersHorizontal } from 'lucide-react';
+import { ListChecks, PlusCircle, Trash2, Users, RefreshCcw, Download, Save, Palette, Settings, X, Trophy, SlidersHorizontal, Archive } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -35,6 +35,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { StandingsTable, classificationColorOptions } from '@/components/sections/GroupsSection'; 
 import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
+import ArchiveWinnerDialog from '@/components/ArchiveWinnerDialog';
+
 
 interface ManualMatchModalLeagueProps {
   isOpen: boolean;
@@ -94,7 +96,7 @@ function ManualMatchModalLeague({ isOpen, onClose, onAddMatch, leagueTeams, leag
               <SelectTrigger id="teamBLeagueSelect"><SelectValue placeholder="Seleccionar Equipo B" /></SelectTrigger>
               <SelectContent>
                 {availableTeamsForB.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
-                {teamAId && availableTeamsForB.length === 0 && <SelectItem value="" disabled>No hay otros equipos disponibles</SelectItem>}
+                {teamAId && availableTeamsForB.length === 0 && <SelectItem value="no-available-teams-B" disabled>No hay otros equipos disponibles</SelectItem>}
               </SelectContent>
             </Select>
           </div>
@@ -114,7 +116,8 @@ export default function LeagueSection() {
     league, teams, isAdmin, setupLeague, deleteLeague, generateLeagueMatches, 
     updateLeagueMatchScore, getTeamById, getLeagueStandings,
     addLeagueClassificationZone, removeLeagueClassificationZone,
-    setLeagueMatchGenerationMode, addManualMatchToLeague, removeManualMatchFromLeague, clearLeagueMatches, setLeagueRounds
+    setLeagueMatchGenerationMode, addManualMatchToLeague, removeManualMatchFromLeague, clearLeagueMatches, setLeagueRounds,
+    addArchivedWinner
   } = useTournamentStore();
   
   const [newLeagueName, setNewLeagueName] = useState('');
@@ -128,8 +131,11 @@ export default function LeagueSection() {
   const [newZoneMaxRank, setNewZoneMaxRank] = useState('');
   const [newZoneColorClass, setNewZoneColorClass] = useState(classificationColorOptions[0].value);
   const [isManualMatchModalOpen, setIsManualMatchModalOpen] = useState(false);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [championToArchive, setChampionToArchive] = useState<{ id: string; name: string } | null>(null);
   
   const { toast } = useToast();
+  const leagueStandings = getLeagueStandings();
 
   useEffect(() => {
     if (!league) {
@@ -263,6 +269,33 @@ export default function LeagueSection() {
     }
   };
 
+  const openArchiveWinnerModal = () => {
+    if (league && leagueStandings.length > 0) {
+      const champion = leagueStandings[0];
+      const championTeam = getTeamById(champion.teamId);
+      if (championTeam) {
+        setChampionToArchive({ id: championTeam.id, name: championTeam.name });
+        setIsArchiveModalOpen(true);
+      } else {
+        toast({ title: "Error", description: "No se pudo identificar al equipo campeón.", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleArchiveWinner = (tournamentEditionName: string) => {
+    if (league && championToArchive) {
+      addArchivedWinner({
+        tournamentName: tournamentEditionName,
+        championTeamId: championToArchive.id,
+        type: 'Liga',
+      });
+      toast({ title: "Campeón Archivado", description: `${championToArchive.name} ha sido añadido al historial como campeón de ${tournamentEditionName}.` });
+      setIsArchiveModalOpen(false);
+      setChampionToArchive(null);
+    }
+  };
+
+
   if (!league && isAdmin) {
     return (
       <Card className="shadow-lg">
@@ -337,7 +370,6 @@ export default function LeagueSection() {
     );
   }
 
-  const leagueStandings = getLeagueStandings();
   const leagueTeams = league.teamIds.map(id => getTeamById(id)).filter(t => t) as Team[];
 
   return (
@@ -348,9 +380,17 @@ export default function LeagueSection() {
             <Trophy className="mr-2 h-6 w-6 text-yellow-500" /> {league.name}
           </CardTitle>
           {isAdmin && (
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-2">
                  <Button variant="outline" size="sm" onClick={() => setIsDefineZoneModalOpen(true)}>
                     <Palette className="mr-1 h-4 w-4" />Zonas
+                </Button>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={openArchiveWinnerModal}
+                    disabled={leagueStandings.length === 0}
+                >
+                    <Archive className="mr-1 h-4 w-4" /> Archivar Campeón
                 </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -612,7 +652,15 @@ export default function LeagueSection() {
             leagueName={league.name}
           />
         )}
+        {championToArchive && league && (
+           <ArchiveWinnerDialog
+            isOpen={isArchiveModalOpen}
+            setIsOpen={setIsArchiveModalOpen}
+            defaultTournamentName={`${league.name} - Edición Actual`}
+            championName={championToArchive.name}
+            onArchive={handleArchiveWinner}
+          />
+        )}
     </div>
   );
 }
-

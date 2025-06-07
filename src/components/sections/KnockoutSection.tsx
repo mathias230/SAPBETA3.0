@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit } from 'lucide-react';
+import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit, Archive } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -24,6 +24,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
+import ArchiveWinnerDialog from '@/components/ArchiveWinnerDialog';
 
 
 const KnockoutMatchCard: React.FC<{
@@ -142,7 +143,7 @@ const KnockoutMatchCard: React.FC<{
       ) : (
         <div className="space-y-1.5">
           <div className={`flex items-center justify-between p-1.5 rounded ${match.played && match.scoreA !== undefined && match.scoreB !== undefined && match.scoreA > match.scoreB ? 'bg-green-500/20 font-semibold' : ''}`}>
-            <span className="text-sm truncate" title={teamAName}>{teamAName}</span>
+            <span className="text-sm py-1 min-h-[1.5em]" title={teamAName}>{teamAName}</span>
             {isAdmin && !match.played ? (
               <Input type="number" value={scoreA} onChange={(e) => setScoreA(e.target.value)} className="w-12 h-7 text-xs p-1" min="0" />
             ) : (
@@ -151,7 +152,7 @@ const KnockoutMatchCard: React.FC<{
           </div>
           <div className="text-center text-xs text-muted-foreground">VS</div>
           <div className={`flex items-center justify-between p-1.5 rounded ${match.played && match.scoreA !== undefined && match.scoreB !== undefined && match.scoreA < match.scoreB ? 'bg-green-500/20 font-semibold' : ''}`}>
-            <span className="text-sm truncate" title={teamBName}>{teamBName}</span>
+            <span className="text-sm py-1 min-h-[1.5em]" title={teamBName}>{teamBName}</span>
             {isAdmin && !match.played ? (
               <Input type="number" value={scoreB} onChange={(e) => setScoreB(e.target.value)} className="w-12 h-7 text-xs p-1" min="0" />
             ) : (
@@ -179,13 +180,15 @@ const KnockoutMatchCard: React.FC<{
 export default function KnockoutSection() {
   const { 
     knockoutStage, teams, isAdmin, setupKnockoutStage, deleteKnockoutStage, 
-    updateKnockoutMatchScore, getTeamById, updateKnockoutMatchTeams
+    updateKnockoutMatchScore, getTeamById, updateKnockoutMatchTeams, addArchivedWinner
   } = useTournamentStore();
   
   const [newStageName, setNewStageName] = useState('');
   const [numTeamsForStage, setNumTeamsForStage] = useState<string>("8");
   const [slotAssignments, setSlotAssignments] = useState<string[]>(Array(8).fill('')); 
   const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [championToArchive, setChampionToArchive] = useState<{ id: string; name: string } | null>(null);
 
   const { toast } = useToast();
 
@@ -284,7 +287,7 @@ export default function KnockoutSection() {
     setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments); 
     toast({ title: "Fase Eliminatoria Creada", description: `La fase "${newStageName.trim()}" ha sido configurada.` });
     setNewStageName('');
-    setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); 
+    // setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); // No reset here, keep it for potential re-edit if needed later.
   };
   
   const champion = useMemo(() => {
@@ -309,11 +312,37 @@ export default function KnockoutSection() {
     if (teamId !== '') { 
       const existingIndexForSelectedTeam = newAssignments.findIndex((id, i) => id === teamId && i !== index);
       if (existingIndexForSelectedTeam !== -1) {
-        newAssignments[existingIndexForSelectedTeam] = ''; 
+        // Team is already assigned elsewhere, remove it from there if we are assigning it here
+         newAssignments[existingIndexForSelectedTeam] = ''; 
       }
     }
     newAssignments[index] = teamId; 
     setSlotAssignments(newAssignments);
+  };
+
+  const openArchiveWinnerModal = () => {
+    if (knockoutStage && knockoutStage.championId) {
+      const championTeam = getTeamById(knockoutStage.championId);
+      if (championTeam) {
+        setChampionToArchive({ id: championTeam.id, name: championTeam.name });
+        setIsArchiveModalOpen(true);
+      } else {
+        toast({ title: "Error", description: "No se pudo identificar al equipo campeón.", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleArchiveWinner = (tournamentEditionName: string) => {
+    if (knockoutStage && championToArchive) {
+      addArchivedWinner({
+        tournamentName: tournamentEditionName,
+        championTeamId: championToArchive.id,
+        type: 'Eliminatoria',
+      });
+      toast({ title: "Campeón Archivado", description: `${championToArchive.name} ha sido añadido al historial como campeón de ${tournamentEditionName}.` });
+      setIsArchiveModalOpen(false);
+      setChampionToArchive(null);
+    }
   };
 
 
@@ -366,6 +395,7 @@ export default function KnockoutSection() {
                             {team.name}
                           </SelectItem>
                       ))}
+                       {teams.length === 0 && <SelectItem value="no-teams-knockout" disabled>No hay equipos creados</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
@@ -449,10 +479,20 @@ export default function KnockoutSection() {
           </div>
         </CardHeader>
         {champion && (
-            <CardContent>
+            <CardContent className="pt-4 border-t">
                 <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
                     <Trophy className="h-10 w-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
                     <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
+                    {isAdmin && (
+                        <Button 
+                            variant="default" 
+                            size="sm" 
+                            onClick={openArchiveWinnerModal}
+                            className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-yellow-foreground"
+                        >
+                            <Archive className="mr-2 h-4 w-4" /> Archivar Campeón de Eliminatoria
+                        </Button>
+                    )}
                 </div>
             </CardContent>
         )}
@@ -504,10 +544,15 @@ export default function KnockoutSection() {
           </ScrollArea>
         </CardContent>
       </Card>
+        {championToArchive && knockoutStage && (
+           <ArchiveWinnerDialog
+            isOpen={isArchiveModalOpen}
+            setIsOpen={setIsArchiveModalOpen}
+            defaultTournamentName={`${knockoutStage.name} - Edición Actual`}
+            championName={championToArchive.name}
+            onArchive={handleArchiveWinner}
+          />
+        )}
     </div>
   );
 }
-
-    
-
-    
