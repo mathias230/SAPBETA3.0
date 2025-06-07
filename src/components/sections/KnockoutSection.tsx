@@ -300,7 +300,7 @@ export default function KnockoutSection() {
   const handleExportBracket = () => {
     if (knockoutStage && knockoutStage.name) {
         const stageName = knockoutStage.name.replace(/\s+/g, '_') || 'Bracket';
-        exportElementAsPNG('knockout-bracket-export-area', `${stageName}.png`);
+        exportElementAsPNG('knockout-bracket-full-export-area', `${stageName}.png`);
     } else {
         toast({ title: "Error de Exportación", description: "No hay bracket para exportar.", variant: "destructive"});
     }
@@ -394,7 +394,7 @@ export default function KnockoutSection() {
                             {team.name}
                           </SelectItem>
                       ))}
-                       {teams.length === 0 && <SelectItem value="no-teams-knockout" disabled>No hay equipos creados</SelectItem>}
+                       {teams.length === 0 && <SelectItem value="no-teams-knockout-setup" disabled>No hay equipos creados</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
@@ -477,29 +477,28 @@ export default function KnockoutSection() {
             )}
           </div>
         </CardHeader>
-        {champion && (
-            <CardContent className="pt-4 border-t">
-                <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
-                    <Trophy className="h-10 w-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
-                    <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
-                    {isAdmin && (
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={openArchiveWinnerModal}
-                            className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-yellow-foreground"
-                        >
-                            <Archive className="mr-2 h-4 w-4" /> Archivar Campeón de Eliminatoria
-                        </Button>
-                    )}
-                </div>
-            </CardContent>
-        )}
+        {/* Champion announcement moved to the Bracket Card below for export purposes */}
       </Card>
 
-      <Card>
+      <Card id="knockout-bracket-full-export-area">
         <CardHeader><CardTitle>Bracket de Eliminatorias</CardTitle></CardHeader>
-        <CardContent id="knockout-bracket-export-area" className="bg-card p-4">
+        <CardContent className="bg-card p-4 space-y-4">
+          {champion && (
+            <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
+              <Trophy className="h-10 w-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
+              <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
+              {isAdmin && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={openArchiveWinnerModal}
+                  className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-yellow-foreground"
+                >
+                  <Archive className="mr-2 h-4 w-4" /> Archivar Campeón de Eliminatoria
+                </Button>
+              )}
+            </div>
+          )}
           <ScrollArea className="pb-4">
             <div className="flex space-x-8 overflow-x-auto p-4">
               {knockoutStage && knockoutStage.rounds && knockoutStage.rounds.map((round, roundIndex) => (
@@ -513,7 +512,7 @@ export default function KnockoutSection() {
                           roundName={round.name}
                           isAdmin={isAdmin}
                           allTeams={teams}
-                          getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
+                          getTeamName={(id) => getTeamById(id)?.name || (id === 'TBD' ? 'A Definir' : (id === 'TBD_DELETED' ? 'Equipo Eliminado' : 'N/A'))}
                           onSaveScore={handleSaveKnockoutScoreInternal(round.id)}
                           onSaveTeamChanges={handleSaveKnockoutTeamChanges(round.id)}
                           initialScoreA={matchScoresInput[match.id]?.scoreA ?? ''}
