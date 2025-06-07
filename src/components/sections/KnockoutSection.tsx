@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit, Archive, Award } from 'lucide-react'; // Added Award
+import { GitFork, PlusCircle, Trash2, Users, Save, Download, ListOrdered, Edit, Archive, Star } from 'lucide-react'; // Changed Trophy/Award to Star
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -396,7 +396,7 @@ export default function KnockoutSection() {
                 <div key={`slot-${index}`} className="flex items-center space-x-3 mb-3">
                   <Label htmlFor={`slot-select-${index}`} className="w-24 text-sm">Llave {index + 1}:</Label>
                   <Select
-                    value={slotAssignments[index]} // Ensure this is not empty string for placeholder
+                    value={slotAssignments[index] || undefined} 
                     onValueChange={(teamId) => handleSlotAssignmentChange(index, teamId)}
                   >
                     <SelectTrigger id={`slot-select-${index}`} className="flex-grow">
@@ -498,8 +498,10 @@ export default function KnockoutSection() {
         <CardContent className="bg-card p-4 space-y-4">
           {champion && (
             <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
-              <Award className="h-10 w-10 text-red-500 mx-auto mb-2" /> {/* Changed to Award and kept red for debugging */}
-              <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
+              <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300 flex items-center justify-center">
+                <Star className="h-8 w-8 text-red-500 mr-2" /> {/* Using Star icon, red for debug, inline */}
+                ¡Campeón: {champion.name}!
+              </h3>
               {isAdmin && (
                 <Button
                   id="archive-knockout-champion-button"
@@ -568,5 +570,3 @@ export default function KnockoutSection() {
     </div>
   );
 }
-
-    
