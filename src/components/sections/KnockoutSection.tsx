@@ -477,7 +477,6 @@ export default function KnockoutSection() {
             )}
           </div>
         </CardHeader>
-        {/* Champion announcement moved to the Bracket Card below for export purposes */}
       </Card>
 
       <Card id="knockout-bracket-full-export-area">
@@ -485,7 +484,7 @@ export default function KnockoutSection() {
         <CardContent className="bg-card p-4 space-y-4">
           {champion && (
             <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
-              <Trophy className="h-10 w-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
+              <Trophy className="h-10 w-10 text-yellow-700 dark:text-yellow-300 mx-auto mb-2" />
               <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
               {isAdmin && (
                 <Button
@@ -554,5 +553,3 @@ export default function KnockoutSection() {
     </div>
   );
 }
-
-    
