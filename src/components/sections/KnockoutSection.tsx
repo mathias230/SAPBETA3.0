@@ -272,7 +272,7 @@ export default function KnockoutSection() {
       return;
     }
     const numTeams = parseInt(numTeamsForStage);
-    const assignedTeams = slotAssignments.filter(id => id && id !== '');
+    const assignedTeams = slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED');
 
     if (assignedTeams.length !== numTeams) {
       toast({ title: "Error", description: `Debe asignar exactamente ${numTeams} equipos a las llaves. Asignados: ${assignedTeams.length}.`, variant: "destructive" });
@@ -319,10 +319,10 @@ export default function KnockoutSection() {
   const handleSlotAssignmentChange = (index: number, teamId: string) => {
     const newAssignments = [...slotAssignments];
 
-    if (teamId !== '' && teamId !== 'TBD' && teamId !== 'TBD_DELETED') { // Ensure not assigning 'TBD'/'TBD_DELETED' as a real choice causing conflicts
+    if (teamId !== '' && teamId !== 'TBD' && teamId !== 'TBD_DELETED') { 
       const existingIndexForSelectedTeam = newAssignments.findIndex((id, i) => id === teamId && i !== index);
       if (existingIndexForSelectedTeam !== -1) {
-         newAssignments[existingIndexForSelectedTeam] = ''; // Or some other placeholder that Select can handle if it's not the main `value` prop itself
+         newAssignments[existingIndexForSelectedTeam] = ''; 
       }
     }
     newAssignments[index] = teamId;
@@ -494,7 +494,7 @@ export default function KnockoutSection() {
         <CardContent className="bg-card p-4 space-y-4">
           {champion && (
             <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
-              <Trophy className="h-10 w-10 text-yellow-700 dark:text-yellow-300 mx-auto mb-2" />
+              <Trophy className="h-10 w-10 text-red-500 mx-auto mb-2" /> {/* Changed color to red-500 for debugging */}
               <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
               {isAdmin && (
                 <Button
@@ -565,3 +565,4 @@ export default function KnockoutSection() {
   );
 }
 
+    
