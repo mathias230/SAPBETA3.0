@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit, Archive } from 'lucide-react';
+import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit, Archive, Award } from 'lucide-react'; // Added Award
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -273,18 +273,22 @@ export default function KnockoutSection() {
     }
     const numTeams = parseInt(numTeamsForStage);
     const assignedTeams = slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED');
-
+    
     if (assignedTeams.length !== numTeams) {
-      toast({ title: "Error", description: `Debe asignar exactamente ${numTeams} equipos a las llaves. Asignados: ${assignedTeams.length}.`, variant: "destructive" });
-      return;
+        const validSlotAssignments = slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED');
+        if (validSlotAssignments.length !== numTeams) {
+             toast({ title: "Error", description: `Debe asignar exactamente ${numTeams} equipos válidos a las llaves. Asignados: ${validSlotAssignments.length}.`, variant: "destructive" });
+             return;
+        }
     }
+
     const uniqueAssignedTeams = new Set(assignedTeams);
     if (uniqueAssignedTeams.size !== assignedTeams.length) {
       toast({ title: "Error", description: "No puede asignar el mismo equipo a múltiples llaves.", variant: "destructive" });
       return;
     }
 
-    setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments);
+    setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED'));
     toast({ title: "Fase Eliminatoria Creada", description: `La fase "${newStageName.trim()}" ha sido configurada.` });
     setNewStageName('');
   };
@@ -392,7 +396,7 @@ export default function KnockoutSection() {
                 <div key={`slot-${index}`} className="flex items-center space-x-3 mb-3">
                   <Label htmlFor={`slot-select-${index}`} className="w-24 text-sm">Llave {index + 1}:</Label>
                   <Select
-                    value={slotAssignments[index]}
+                    value={slotAssignments[index]} // Ensure this is not empty string for placeholder
                     onValueChange={(teamId) => handleSlotAssignmentChange(index, teamId)}
                   >
                     <SelectTrigger id={`slot-select-${index}`} className="flex-grow">
@@ -494,7 +498,7 @@ export default function KnockoutSection() {
         <CardContent className="bg-card p-4 space-y-4">
           {champion && (
             <div className="p-4 bg-yellow-400/30 dark:bg-yellow-600/40 border border-yellow-500 rounded-lg text-center">
-              <Trophy className="h-10 w-10 text-red-500 mx-auto mb-2" /> {/* Changed color to red-500 for debugging */}
+              <Award className="h-10 w-10 text-red-500 mx-auto mb-2" /> {/* Changed to Award and kept red for debugging */}
               <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
               {isAdmin && (
                 <Button
