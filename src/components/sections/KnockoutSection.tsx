@@ -287,7 +287,6 @@ export default function KnockoutSection() {
     setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments);
     toast({ title: "Fase Eliminatoria Creada", description: `La fase "${newStageName.trim()}" ha sido configurada.` });
     setNewStageName('');
-    // setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); // No reset here, keep it for potential re-edit if needed later.
   };
 
   const champion = useMemo(() => {
@@ -297,22 +296,33 @@ export default function KnockoutSection() {
     return null;
   }, [knockoutStage, getTeamById]);
 
-  const handleExportBracket = () => {
-    if (knockoutStage && knockoutStage.name) {
-        const stageName = knockoutStage.name.replace(/\s+/g, '_') || 'Bracket';
-        exportElementAsPNG('knockout-bracket-full-export-area', `${stageName}.png`);
-    } else {
-        toast({ title: "Error de Exportación", description: "No hay bracket para exportar.", variant: "destructive"});
+  const handleExportBracket = async () => {
+    const archiveButton = document.getElementById('archive-knockout-champion-button');
+    if (archiveButton) {
+      archiveButton.classList.add('hide-on-export');
+    }
+
+    try {
+      if (knockoutStage && knockoutStage.name) {
+          const stageName = knockoutStage.name.replace(/\s+/g, '_') || 'Bracket';
+          await exportElementAsPNG('knockout-bracket-full-export-area', `${stageName}.png`);
+      } else {
+          toast({ title: "Error de Exportación", description: "No hay bracket para exportar.", variant: "destructive"});
+      }
+    } finally {
+      if (archiveButton) {
+        archiveButton.classList.remove('hide-on-export');
+      }
     }
   };
 
   const handleSlotAssignmentChange = (index: number, teamId: string) => {
     const newAssignments = [...slotAssignments];
 
-    if (teamId !== '') {
+    if (teamId !== '' && teamId !== 'TBD' && teamId !== 'TBD_DELETED') { // Ensure not assigning 'TBD'/'TBD_DELETED' as a real choice causing conflicts
       const existingIndexForSelectedTeam = newAssignments.findIndex((id, i) => id === teamId && i !== index);
       if (existingIndexForSelectedTeam !== -1) {
-         newAssignments[existingIndexForSelectedTeam] = '';
+         newAssignments[existingIndexForSelectedTeam] = ''; // Or some other placeholder that Select can handle if it's not the main `value` prop itself
       }
     }
     newAssignments[index] = teamId;
@@ -413,8 +423,8 @@ export default function KnockoutSection() {
               !newStageName.trim() ||
               teams.length < parseInt(numTeamsForStage) ||
               parseInt(numTeamsForStage) < 2 ||
-              slotAssignments.filter(id => id && id !== '').length !== parseInt(numTeamsForStage) ||
-              new Set(slotAssignments.filter(id => id && id !== '')).size !== slotAssignments.filter(id => id && id !== '').length
+              slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED').length !== parseInt(numTeamsForStage) ||
+              new Set(slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED')).size !== slotAssignments.filter(id => id && id !== '' && id !== 'TBD' && id !== 'TBD_DELETED').length
             }
           >
             <PlusCircle className="mr-2 h-4 w-4" />Crear Fase
@@ -488,6 +498,7 @@ export default function KnockoutSection() {
               <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
               {isAdmin && (
                 <Button
+                  id="archive-knockout-champion-button"
                   variant="default"
                   size="sm"
                   onClick={openArchiveWinnerModal}
@@ -553,3 +564,4 @@ export default function KnockoutSection() {
     </div>
   );
 }
+

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,4 +86,8 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.hide-on-export {
+  display: none !important;
 }
