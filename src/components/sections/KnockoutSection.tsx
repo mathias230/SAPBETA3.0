@@ -361,7 +361,6 @@ export default function KnockoutSection() {
                       <SelectValue placeholder="Seleccionar equipo..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">-- Vacío --</SelectItem>
                       {teams.map(team => (
                           <SelectItem key={team.id} value={team.id}> 
                             {team.name}
@@ -461,7 +460,7 @@ export default function KnockoutSection() {
       
       <Card>
         <CardHeader><CardTitle>Bracket de Eliminatorias</CardTitle></CardHeader>
-        <CardContent id="knockout-bracket-export-area" className="bg-card">
+        <CardContent id="knockout-bracket-export-area" className="bg-card p-4">
           <ScrollArea className="pb-4">
             <div className="flex space-x-8 overflow-x-auto p-4"> 
               {knockoutStage && knockoutStage.rounds && knockoutStage.rounds.map((round, roundIndex) => (
@@ -508,5 +507,7 @@ export default function KnockoutSection() {
     </div>
   );
 }
+
+    
 
     
