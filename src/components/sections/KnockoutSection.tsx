@@ -60,7 +60,7 @@ const KnockoutMatchCard: React.FC<{
 
   const teamAName = getTeamName(match.teamAId);
   const teamBName = getTeamName(match.teamBId);
-  
+
   const canEditTeams = isAdmin && !match.played && match.teamAId !== 'TBD' && match.teamBId !== 'TBD' && match.teamAId !== 'TBD_DELETED' && match.teamBId !== 'TBD_DELETED';
 
   const handleSaveScoreInternal = () => {
@@ -101,7 +101,7 @@ const KnockoutMatchCard: React.FC<{
   };
 
   const handleCancelTeamEdit = () => {
-    setEditableTeamAId(match.teamAId); 
+    setEditableTeamAId(match.teamAId);
     setEditableTeamBId(match.teamBId);
     setIsEditingTeams(false);
   };
@@ -110,7 +110,7 @@ const KnockoutMatchCard: React.FC<{
     <div className="bg-card border rounded-lg p-3 min-w-[240px] shadow">
       <div className="flex justify-between items-center mb-2">
         <p className="text-xs text-muted-foreground">{roundName} - Partido</p>
-        <div className="flex items-center space-x-2"> 
+        <div className="flex items-center space-x-2">
             {match.played && <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">Jugado</span>}
             {canEditTeams && !isEditingTeams && (
             <Button variant="outline" size="icon" className="h-7 w-7 p-1" onClick={() => setIsEditingTeams(true)} title="Editar Equipos">
@@ -119,7 +119,7 @@ const KnockoutMatchCard: React.FC<{
             )}
         </div>
       </div>
-      
+
       {isEditingTeams ? (
         <div className="space-y-2">
           <Select value={editableTeamAId} onValueChange={handleTeamAChange}>
@@ -178,14 +178,14 @@ const KnockoutMatchCard: React.FC<{
 
 
 export default function KnockoutSection() {
-  const { 
-    knockoutStage, teams, isAdmin, setupKnockoutStage, deleteKnockoutStage, 
+  const {
+    knockoutStage, teams, isAdmin, setupKnockoutStage, deleteKnockoutStage,
     updateKnockoutMatchScore, getTeamById, updateKnockoutMatchTeams, addArchivedWinner
   } = useTournamentStore();
-  
+
   const [newStageName, setNewStageName] = useState('');
   const [numTeamsForStage, setNumTeamsForStage] = useState<string>("8");
-  const [slotAssignments, setSlotAssignments] = useState<string[]>(Array(8).fill('')); 
+  const [slotAssignments, setSlotAssignments] = useState<string[]>(Array(8).fill(''));
   const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [championToArchive, setChampionToArchive] = useState<{ id: string; name: string } | null>(null);
@@ -246,7 +246,7 @@ export default function KnockoutSection() {
       toast({ title: "Error", description: "Los empates no son permitidos en fases eliminatorias.", variant: "destructive" });
       return;
     }
-    
+
     const match = knockoutStage?.rounds?.find(r => r.id === roundId)?.matches?.find(m => m.id === matchId);
     if (match && (match.teamAId === 'TBD' || match.teamBId === 'TBD' || match.teamAId === 'TBD_DELETED' || match.teamBId === 'TBD_DELETED')) {
         toast({ title: "Error", description: "No se puede registrar marcador si uno o ambos equipos son 'A Definir' o han sido eliminados.", variant: "destructive" });
@@ -258,7 +258,7 @@ export default function KnockoutSection() {
   };
 
   const handleSaveKnockoutTeamChanges = (roundId: string) => (matchId: string, teamAId: string, teamBId: string) => {
-    if (teamAId === teamBId && teamAId !== 'TBD' && teamAId !== 'TBD_DELETED') { 
+    if (teamAId === teamBId && teamAId !== 'TBD' && teamAId !== 'TBD_DELETED') {
       toast({ title: "Error", description: "Los equipos en un partido deben ser diferentes.", variant: "destructive" });
       return;
     }
@@ -272,8 +272,8 @@ export default function KnockoutSection() {
       return;
     }
     const numTeams = parseInt(numTeamsForStage);
-    const assignedTeams = slotAssignments.filter(id => id && id !== ''); 
-    
+    const assignedTeams = slotAssignments.filter(id => id && id !== '');
+
     if (assignedTeams.length !== numTeams) {
       toast({ title: "Error", description: `Debe asignar exactamente ${numTeams} equipos a las llaves. Asignados: ${assignedTeams.length}.`, variant: "destructive" });
       return;
@@ -284,12 +284,12 @@ export default function KnockoutSection() {
       return;
     }
 
-    setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments); 
+    setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments);
     toast({ title: "Fase Eliminatoria Creada", description: `La fase "${newStageName.trim()}" ha sido configurada.` });
     setNewStageName('');
     // setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); // No reset here, keep it for potential re-edit if needed later.
   };
-  
+
   const champion = useMemo(() => {
     if (knockoutStage && knockoutStage.championId) {
       return getTeamById(knockoutStage.championId);
@@ -308,15 +308,14 @@ export default function KnockoutSection() {
 
   const handleSlotAssignmentChange = (index: number, teamId: string) => {
     const newAssignments = [...slotAssignments];
-    
-    if (teamId !== '') { 
+
+    if (teamId !== '') {
       const existingIndexForSelectedTeam = newAssignments.findIndex((id, i) => id === teamId && i !== index);
       if (existingIndexForSelectedTeam !== -1) {
-        // Team is already assigned elsewhere, remove it from there if we are assigning it here
-         newAssignments[existingIndexForSelectedTeam] = ''; 
+         newAssignments[existingIndexForSelectedTeam] = '';
       }
     }
-    newAssignments[index] = teamId; 
+    newAssignments[index] = teamId;
     setSlotAssignments(newAssignments);
   };
 
@@ -361,8 +360,8 @@ export default function KnockoutSection() {
           </div>
           <div>
             <Label htmlFor="numTeamsStage">Número de Equipos</Label>
-            <Select 
-              value={numTeamsForStage} 
+            <Select
+              value={numTeamsForStage}
               onValueChange={(value) => {
                 setNumTeamsForStage(value);
               }}
@@ -373,7 +372,7 @@ export default function KnockoutSection() {
               </SelectContent>
             </Select>
           </div>
-          
+
           {parseInt(numTeamsForStage) > 0 && teams.length > 0 && (
             <div className="space-y-3 mt-4">
               <Label className="font-semibold text-md flex items-center"><ListOrdered className="mr-2 h-5 w-5 text-primary"/>Asignar Equipos a las Llaves:</Label>
@@ -383,7 +382,7 @@ export default function KnockoutSection() {
                 <div key={`slot-${index}`} className="flex items-center space-x-3 mb-3">
                   <Label htmlFor={`slot-select-${index}`} className="w-24 text-sm">Llave {index + 1}:</Label>
                   <Select
-                    value={slotAssignments[index] || ''}
+                    value={slotAssignments[index]}
                     onValueChange={(teamId) => handleSlotAssignmentChange(index, teamId)}
                   >
                     <SelectTrigger id={`slot-select-${index}`} className="flex-grow">
@@ -391,7 +390,7 @@ export default function KnockoutSection() {
                     </SelectTrigger>
                     <SelectContent>
                       {teams.map(team => (
-                          <SelectItem key={team.id} value={team.id}> 
+                          <SelectItem key={team.id} value={team.id}>
                             {team.name}
                           </SelectItem>
                       ))}
@@ -408,13 +407,13 @@ export default function KnockoutSection() {
 
         </CardContent>
         <CardFooter>
-          <Button 
-            onClick={handleSetupStage} 
+          <Button
+            onClick={handleSetupStage}
             disabled={
               !newStageName.trim() ||
-              teams.length < parseInt(numTeamsForStage) || 
+              teams.length < parseInt(numTeamsForStage) ||
               parseInt(numTeamsForStage) < 2 ||
-              slotAssignments.filter(id => id && id !== '').length !== parseInt(numTeamsForStage) || 
+              slotAssignments.filter(id => id && id !== '').length !== parseInt(numTeamsForStage) ||
               new Set(slotAssignments.filter(id => id && id !== '')).size !== slotAssignments.filter(id => id && id !== '').length
             }
           >
@@ -484,9 +483,9 @@ export default function KnockoutSection() {
                     <Trophy className="h-10 w-10 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" />
                     <h3 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">¡Campeón: {champion.name}!</h3>
                     {isAdmin && (
-                        <Button 
-                            variant="default" 
-                            size="sm" 
+                        <Button
+                            variant="default"
+                            size="sm"
                             onClick={openArchiveWinnerModal}
                             className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-yellow-foreground"
                         >
@@ -497,19 +496,19 @@ export default function KnockoutSection() {
             </CardContent>
         )}
       </Card>
-      
+
       <Card>
         <CardHeader><CardTitle>Bracket de Eliminatorias</CardTitle></CardHeader>
         <CardContent id="knockout-bracket-export-area" className="bg-card p-4">
           <ScrollArea className="pb-4">
-            <div className="flex space-x-8 overflow-x-auto p-4"> 
+            <div className="flex space-x-8 overflow-x-auto p-4">
               {knockoutStage && knockoutStage.rounds && knockoutStage.rounds.map((round, roundIndex) => (
                 <div key={round.id} className="flex flex-col items-center space-y-6 min-w-max">
                   <h3 className="text-lg font-semibold text-center sticky top-0 bg-background/80 backdrop-blur-sm py-2 px-4 rounded-md z-10">{round.name}</h3>
                   <div className="space-y-6 relative">
                     {round.matches && round.matches.map((match, matchIndex) => (
                       <div key={match.id} className="flex items-center">
-                        <KnockoutMatchCard 
+                        <KnockoutMatchCard
                           match={match}
                           roundName={round.name}
                           isAdmin={isAdmin}
@@ -520,19 +519,19 @@ export default function KnockoutSection() {
                           initialScoreA={matchScoresInput[match.id]?.scoreA ?? ''}
                           initialScoreB={matchScoresInput[match.id]?.scoreB ?? ''}
                         />
-                        {knockoutStage && knockoutStage.rounds && roundIndex < knockoutStage.rounds.length - 1 && match.played && 
+                        {knockoutStage && knockoutStage.rounds && roundIndex < knockoutStage.rounds.length - 1 && match.played &&
                          knockoutStage.rounds[roundIndex+1] && knockoutStage.rounds[roundIndex+1].matches && knockoutStage.rounds[roundIndex+1].matches.some(
-                            (nextMatch: MatchType) => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
+                            (nextMatch: MatchType) => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) ||
                                          nextMatch.teamBId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId)
                          ) && (
                           <div className="w-8 h-px bg-muted-foreground mx-2"></div>
                         )}
-                         {knockoutStage && knockoutStage.rounds && roundIndex < knockoutStage.rounds.length - 1 && match.played && 
+                         {knockoutStage && knockoutStage.rounds && roundIndex < knockoutStage.rounds.length - 1 && match.played &&
                             (!knockoutStage.rounds[roundIndex+1]?.matches || !knockoutStage.rounds[roundIndex+1].matches.some(
-                                (nextMatch: MatchType) => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) || 
+                                (nextMatch: MatchType) => nextMatch.teamAId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) ||
                                              nextMatch.teamBId === (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId)
                             )) && knockoutStage.championId !== (match.scoreA! > match.scoreB! ? match.teamAId : match.teamBId) && (
-                            <div className="w-8 h-px bg-transparent mx-2"></div> 
+                            <div className="w-8 h-px bg-transparent mx-2"></div>
                          )}
                       </div>
                     ))}
@@ -556,3 +555,5 @@ export default function KnockoutSection() {
     </div>
   );
 }
+
+    

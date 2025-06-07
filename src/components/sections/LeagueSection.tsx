@@ -32,7 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { StandingsTable, classificationColorOptions } from '@/components/sections/GroupsSection'; 
+import { StandingsTable, classificationColorOptions } from '@/components/sections/GroupsSection';
 import { useToast } from "@/hooks/use-toast";
 import { exportElementAsPNG } from '@/lib/export';
 import ArchiveWinnerDialog from '@/components/ArchiveWinnerDialog';
@@ -66,8 +66,8 @@ function ManualMatchModalLeague({ isOpen, onClose, onAddMatch, leagueTeams, leag
     setTeamAId('');
     setTeamBId('');
   };
-  
-  useEffect(() => { 
+
+  useEffect(() => {
     if (teamAId && teamAId === teamBId) {
       setTeamBId('');
     }
@@ -112,14 +112,14 @@ function ManualMatchModalLeague({ isOpen, onClose, onAddMatch, leagueTeams, leag
 
 
 export default function LeagueSection() {
-  const { 
-    league, teams, isAdmin, setupLeague, deleteLeague, generateLeagueMatches, 
+  const {
+    league, teams, isAdmin, setupLeague, deleteLeague, generateLeagueMatches,
     updateLeagueMatchScore, getTeamById, getLeagueStandings,
     addLeagueClassificationZone, removeLeagueClassificationZone,
     setLeagueMatchGenerationMode, addManualMatchToLeague, removeManualMatchFromLeague, clearLeagueMatches, setLeagueRounds,
     addArchivedWinner
   } = useTournamentStore();
-  
+
   const [newLeagueName, setNewLeagueName] = useState('');
   const [selectedTeamIdsForLeague, setSelectedTeamIdsForLeague] = useState<string[]>([]);
   const [initialLeagueRounds, setInitialLeagueRounds] = useState<"1" | "2">("1");
@@ -133,7 +133,7 @@ export default function LeagueSection() {
   const [isManualMatchModalOpen, setIsManualMatchModalOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [championToArchive, setChampionToArchive] = useState<{ id: string; name: string } | null>(null);
-  
+
   const { toast } = useToast();
   const leagueStandings = getLeagueStandings();
 
@@ -222,8 +222,8 @@ export default function LeagueSection() {
     if (rankMin > rankMax) {
       toast({ title: "Error", description: "El Puesto Mín. no puede ser mayor que el Puesto Máx.", variant: "destructive" }); return;
     }
-     if ((league.classificationZones || []).some(zone => 
-        (rankMin >= zone.rankMin && rankMin <= zone.rankMax) || 
+     if ((league.classificationZones || []).some(zone =>
+        (rankMin >= zone.rankMin && rankMin <= zone.rankMax) ||
         (rankMax >= zone.rankMin && rankMax <= zone.rankMax) ||
         (zone.rankMin >= rankMin && zone.rankMin <= rankMax) ||
         (zone.rankMax >= rankMin && zone.rankMax <= rankMax)
@@ -248,7 +248,7 @@ export default function LeagueSection() {
     removeLeagueClassificationZone(zoneId);
     toast({ title: "Zona de Clasificación Eliminada" });
   };
-  
+
   const handleToggleLeagueMatchMode = () => {
     if (!league) return;
     const newMode = league.matchGenerationMode === 'automatic' ? 'manual' : 'automatic';
@@ -314,12 +314,12 @@ export default function LeagueSection() {
             <ScrollArea className="h-40 border rounded-md p-2">
               {teams.map(team => (
                 <div key={team.id} className="flex items-center space-x-2 mb-1">
-                  <input 
-                    type="checkbox" 
-                    id={`team-${team.id}-league`} 
+                  <input
+                    type="checkbox"
+                    id={`team-${team.id}-league`}
                     checked={selectedTeamIdsForLeague.includes(team.id)}
                     onChange={() => {
-                      setSelectedTeamIdsForLeague(prev => 
+                      setSelectedTeamIdsForLeague(prev =>
                         prev.includes(team.id) ? prev.filter(id => id !== team.id) : [...prev, team.id]
                       )
                     }}
@@ -384,9 +384,9 @@ export default function LeagueSection() {
                  <Button variant="outline" size="sm" onClick={() => setIsDefineZoneModalOpen(true)}>
                     <Palette className="mr-1 h-4 w-4" />Zonas
                 </Button>
-                <Button 
-                    variant="outline" 
-                    size="sm" 
+                <Button
+                    variant="outline"
+                    size="sm"
                     onClick={openArchiveWinnerModal}
                     disabled={leagueStandings.length === 0}
                 >
@@ -420,7 +420,7 @@ export default function LeagueSection() {
               <summary className="font-semibold flex items-center cursor-pointer hover:text-primary">
                 <SlidersHorizontal className="mr-2 h-4 w-4 text-primary" />Configuración de la Liga
               </summary>
-              
+
               <div className="space-y-1 pt-2">
                 <Label>Modo de Partidos: <span className="font-normal">{league.matchGenerationMode === 'automatic' ? 'Automático' : 'Manual'}</span></Label>
                 <Button onClick={handleToggleLeagueMatchMode} variant="outline" size="sm">
@@ -542,16 +542,16 @@ export default function LeagueSection() {
           <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Clasificación</CardTitle>
         </CardHeader>
         <CardContent id="league-standings-export" className="bg-card rounded-md">
-          <StandingsTable 
-              standings={leagueStandings} 
+          <StandingsTable
+              standings={leagueStandings}
               getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
               classificationZones={league.classificationZones || []}
             />
         </CardContent>
           <CardFooter className="pt-4 border-t">
-              <Button 
+              <Button
                 onClick={() => exportElementAsPNG(`league-standings-export`, `${league.name.replace(/\s+/g, '_')}-clasificacion.png`)}
-                variant="default" 
+                variant="default"
                 className="w-full"
                 disabled={leagueStandings.length === 0}
               >
@@ -664,3 +664,5 @@ export default function LeagueSection() {
     </div>
   );
 }
+
+    
