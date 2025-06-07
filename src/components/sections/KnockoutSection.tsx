@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, ChevronRight, Download } from 'lucide-react';
+import { GitFork, PlusCircle, Trash2, Users, Save, Trophy, Download, ListOrdered, Edit } from 'lucide-react'; // Removed XCircle, Edit is used
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -30,59 +30,145 @@ const KnockoutMatchCard: React.FC<{
   match: MatchType;
   roundName: string;
   isAdmin: boolean;
+  allTeams: Team[];
   getTeamName: (id: string) => string;
   onSaveScore: (matchId: string, scoreA: string, scoreB: string) => void;
+  onSaveTeamChanges: (matchId: string, teamAId: string, teamBId: string) => void;
   initialScoreA: string;
   initialScoreB: string;
-}> = ({ match, roundName, isAdmin, getTeamName, onSaveScore, initialScoreA, initialScoreB }) => {
+}> = ({ match, roundName, isAdmin, allTeams, getTeamName, onSaveScore, onSaveTeamChanges, initialScoreA, initialScoreB }) => {
   const [scoreA, setScoreA] = useState(initialScoreA);
   const [scoreB, setScoreB] = useState(initialScoreB);
+  const [isEditingTeams, setIsEditingTeams] = useState(false);
+  const [editableTeamAId, setEditableTeamAId] = useState(match.teamAId);
+  const [editableTeamBId, setEditableTeamBId] = useState(match.teamBId);
+  const { toast } = useToast();
 
   useEffect(() => {
     setScoreA(initialScoreA);
     setScoreB(initialScoreB);
   }, [initialScoreA, initialScoreB]);
 
+  useEffect(() => {
+    setEditableTeamAId(match.teamAId);
+    setEditableTeamBId(match.teamBId);
+    // Reset editing mode if match becomes played or teams become TBD externally
+    if (match.played || match.teamAId === 'TBD' || match.teamBId === 'TBD' || match.teamAId === 'TBD_DELETED' || match.teamBId === 'TBD_DELETED') {
+      setIsEditingTeams(false);
+    }
+  }, [match.teamAId, match.teamBId, match.played]);
+
   const teamAName = getTeamName(match.teamAId);
   const teamBName = getTeamName(match.teamBId);
+  
+  const canEditTeams = isAdmin && !match.played && match.teamAId !== 'TBD' && match.teamBId !== 'TBD' && match.teamAId !== 'TBD_DELETED' && match.teamBId !== 'TBD_DELETED';
 
-  const handleSave = () => {
+  const handleSaveScoreInternal = () => {
     onSaveScore(match.id, scoreA, scoreB);
   };
 
+  const handleTeamAChange = (newTeamId: string) => {
+    if (newTeamId === editableTeamBId && newTeamId !== 'TBD' && newTeamId !== 'TBD_DELETED') {
+      toast({ title: "Conflicto de Equipos", description: "Un equipo no puede jugar contra sí mismo.", variant: "destructive" });
+      return;
+    }
+    setEditableTeamAId(newTeamId);
+  };
+
+  const handleTeamBChange = (newTeamId: string) => {
+     if (newTeamId === editableTeamAId && newTeamId !== 'TBD' && newTeamId !== 'TBD_DELETED') {
+      toast({ title: "Conflicto de Equipos", description: "Un equipo no puede jugar contra sí mismo.", variant: "destructive" });
+      return;
+    }
+    setEditableTeamBId(newTeamId);
+  };
+
+  const handleConfirmTeamChanges = () => {
+    if (editableTeamAId === 'TBD' || editableTeamBId === 'TBD' || editableTeamAId === 'TBD_DELETED' || editableTeamBId === 'TBD_DELETED') {
+        toast({ title: "Error", description: "Selecciona equipos válidos.", variant: "destructive"});
+        return;
+    }
+    if (!editableTeamAId || !editableTeamBId) {
+        toast({ title: "Error", description: "Ambos equipos deben ser seleccionados.", variant: "destructive"});
+        return;
+    }
+    if (editableTeamAId === editableTeamBId) {
+       toast({ title: "Error", description: "Los equipos deben ser diferentes.", variant: "destructive"});
+       return;
+    }
+    onSaveTeamChanges(match.id, editableTeamAId, editableTeamBId);
+    setIsEditingTeams(false);
+  };
+
+  const handleCancelTeamEdit = () => {
+    setEditableTeamAId(match.teamAId); // Revert to original match teams
+    setEditableTeamBId(match.teamBId);
+    setIsEditingTeams(false);
+  };
+
   return (
-    <div className="bg-card border rounded-lg p-3 min-w-[220px] shadow">
+    <div className="bg-card border rounded-lg p-3 min-w-[240px] shadow">
       <div className="flex justify-between items-center mb-2">
         <p className="text-xs text-muted-foreground">{roundName} - Partido</p>
-        {match.played && <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">Jugado</span>}
+        <div className="flex items-center space-x-2"> {/* Ensures spacing for multiple items */}
+            {match.played && <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">Jugado</span>}
+            {canEditTeams && !isEditingTeams && (
+            <Button variant="outline" size="icon" className="h-7 w-7 p-1" onClick={() => setIsEditingTeams(true)} title="Editar Equipos">
+                <Edit className="h-4 w-4" />
+            </Button>
+            )}
+        </div>
       </div>
       
-      <div className="space-y-1.5">
-        <div className={`flex items-center justify-between p-1.5 rounded ${match.played && match.scoreA !== undefined && match.scoreB !== undefined && match.scoreA > match.scoreB ? 'bg-green-500/20 font-semibold' : ''}`}>
-          <span className="text-sm truncate" title={teamAName}>{teamAName}</span>
-          {isAdmin && !match.played ? (
-            <Input type="number" value={scoreA} onChange={(e) => setScoreA(e.target.value)} className="w-12 h-7 text-xs p-1" min="0" />
-          ) : (
-            <span className="text-sm font-bold">{match.scoreA ?? '-'}</span>
-          )}
+      {isEditingTeams ? (
+        <div className="space-y-2">
+          <Select value={editableTeamAId} onValueChange={handleTeamAChange}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Equipo A" /></SelectTrigger>
+            <SelectContent>
+              {allTeams.map(t => <SelectItem key={t.id} value={t.id} disabled={t.id === editableTeamBId && t.id !== 'TBD' && t.id !== 'TBD_DELETED'}>{t.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <div className="text-center text-xs text-muted-foreground">VS</div>
+          <Select value={editableTeamBId} onValueChange={handleTeamBChange}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Equipo B" /></SelectTrigger>
+            <SelectContent>
+               {allTeams.map(t => <SelectItem key={t.id} value={t.id} disabled={t.id === editableTeamAId && t.id !== 'TBD' && t.id !== 'TBD_DELETED'}>{t.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <div className="flex space-x-2 mt-2">
+            <Button size="xs" onClick={handleConfirmTeamChanges} className="flex-1 h-7 text-xs">Guardar Equipos</Button>
+            <Button variant="outline" size="xs" onClick={handleCancelTeamEdit} className="flex-1 h-7 text-xs">Cancelar</Button>
+          </div>
         </div>
-        <div className="text-center text-xs text-muted-foreground">VS</div>
-        <div className={`flex items-center justify-between p-1.5 rounded ${match.played && match.scoreA !== undefined && match.scoreB !== undefined && match.scoreA < match.scoreB ? 'bg-green-500/20 font-semibold' : ''}`}>
-           <span className="text-sm truncate" title={teamBName}>{teamBName}</span>
-          {isAdmin && !match.played ? (
-            <Input type="number" value={scoreB} onChange={(e) => setScoreB(e.target.value)} className="w-12 h-7 text-xs p-1" min="0" />
-          ) : (
-            <span className="text-sm font-bold">{match.scoreB ?? '-'}</span>
-          )}
+      ) : (
+        <div className="space-y-1.5">
+          <div className={`flex items-center justify-between p-1.5 rounded ${match.played && match.scoreA !== undefined && match.scoreB !== undefined && match.scoreA > match.scoreB ? 'bg-green-500/20 font-semibold' : ''}`}>
+            <span className="text-sm truncate" title={teamAName}>{teamAName}</span>
+            {isAdmin && !match.played ? (
+              <Input type="number" value={scoreA} onChange={(e) => setScoreA(e.target.value)} className="w-12 h-7 text-xs p-1" min="0" />
+            ) : (
+              <span className="text-sm font-bold">{match.scoreA ?? '-'}</span>
+            )}
+          </div>
+          <div className="text-center text-xs text-muted-foreground">VS</div>
+          <div className={`flex items-center justify-between p-1.5 rounded ${match.played && match.scoreA !== undefined && match.scoreB !== undefined && match.scoreA < match.scoreB ? 'bg-green-500/20 font-semibold' : ''}`}>
+            <span className="text-sm truncate" title={teamBName}>{teamBName}</span>
+            {isAdmin && !match.played ? (
+              <Input type="number" value={scoreB} onChange={(e) => setScoreB(e.target.value)} className="w-12 h-7 text-xs p-1" min="0" />
+            ) : (
+              <span className="text-sm font-bold">{match.scoreB ?? '-'}</span>
+            )}
+          </div>
         </div>
-      </div>
-      {isAdmin && !match.played && (teamAName !== 'A Definir' && teamAName !== 'Equipo Eliminado' && teamBName !== 'A Definir' && teamBName !== 'Equipo Eliminado') && (
-        <Button size="xs" onClick={handleSave} className="w-full mt-2.5 h-7 text-xs">
+      )}
+
+      {isAdmin && !isEditingTeams && !match.played && (teamAName !== 'A Definir' && teamAName !== 'Equipo Eliminado' && teamBName !== 'A Definir' && teamBName !== 'Equipo Eliminado') && (
+        <Button size="xs" onClick={handleSaveScoreInternal} className="w-full mt-2.5 h-7 text-xs">
           <Save className="mr-1 h-3 w-3" /> Guardar Marcador
         </Button>
       )}
-       {isAdmin && match.played && (teamAName !== 'Equipo Eliminado' && teamBName !== 'Equipo Eliminado') &&(
-         <Button size="xs" onClick={handleSave} variant="outline" className="w-full mt-2.5 h-7 text-xs">
+       {isAdmin && !isEditingTeams && match.played && (teamAName !== 'Equipo Eliminado' && teamBName !== 'Equipo Eliminado') &&(
+         <Button size="xs" onClick={handleSaveScoreInternal} variant="outline" className="w-full mt-2.5 h-7 text-xs">
           <Save className="mr-1 h-3 w-3" /> Actualizar Marcador
         </Button>
        )}
@@ -94,17 +180,22 @@ const KnockoutMatchCard: React.FC<{
 export default function KnockoutSection() {
   const { 
     knockoutStage, teams, isAdmin, setupKnockoutStage, deleteKnockoutStage, 
-    updateKnockoutMatchScore, getTeamById 
+    updateKnockoutMatchScore, getTeamById, updateKnockoutMatchTeams // Added updateKnockoutMatchTeams
   } = useTournamentStore();
   
   const [newStageName, setNewStageName] = useState('');
   const [numTeamsForStage, setNumTeamsForStage] = useState<string>("8");
-  const [selectedTeamIdsForStage, setSelectedTeamIdsForStage] = useState<string[]>([]);
+  const [slotAssignments, setSlotAssignments] = useState<string[]>(Array(8).fill('')); // For manual slot assignment
   const [matchScoresInput, setMatchScoresInput] = useState<Record<string, { scoreA: string, scoreB: string }>>({});
 
   const { toast } = useToast();
 
-  const powerOfTwoOptions = [2, 4, 8, 16, 32]; // Added 2 for final only scenario
+  const powerOfTwoOptions = [2, 4, 8, 16, 32];
+
+  useEffect(() => {
+    // Initialize or reset slotAssignments when numTeamsForStage changes
+    setSlotAssignments(Array(parseInt(numTeamsForStage)).fill(''));
+  }, [numTeamsForStage]);
 
   useEffect(() => {
     if (!knockoutStage) {
@@ -125,7 +216,7 @@ export default function KnockoutSection() {
         knockoutStage.rounds.forEach(round => {
             round.matches.forEach(match => {
                 if (match.played && (prevScores[match.id]?.scoreA !== '' || prevScores[match.id]?.scoreB !== '')) {
-                    // Keep admin-entered scores if match isn't played yet
+                    // This condition was a bit off, fixed to prioritize new scores if match is played
                 } else if (prevScores[match.id] && !match.played ) {
                      mergedState[match.id] = prevScores[match.id];
                 }
@@ -136,7 +227,7 @@ export default function KnockoutSection() {
   }, [knockoutStage]);
 
 
-  const handleSaveKnockoutScore = (roundId: string) => (matchId: string, scoreAStr: string, scoreBStr: string) => {
+  const handleSaveKnockoutScoreInternal = (roundId: string) => (matchId: string, scoreAStr: string, scoreBStr: string) => {
     const scoreA = parseInt(scoreAStr);
     const scoreB = parseInt(scoreBStr);
 
@@ -159,21 +250,39 @@ export default function KnockoutSection() {
     toast({ title: "Partido Actualizado", description: "Marcador registrado y/o fase avanzada." });
   };
 
+  const handleSaveKnockoutTeamChanges = (roundId: string) => (matchId: string, teamAId: string, teamBId: string) => {
+    if (teamAId === teamBId && teamAId !== 'TBD' && teamAId !== 'TBD_DELETED') { 
+      toast({ title: "Error", description: "Los equipos en un partido deben ser diferentes.", variant: "destructive" });
+      return;
+    }
+    updateKnockoutMatchTeams(roundId, matchId, teamAId, teamBId);
+    toast({ title: "Equipos del Partido Actualizados" });
+  };
+
   const handleSetupStage = () => {
     if (!newStageName.trim()) {
       toast({ title: "Error", description: "El nombre de la fase no puede estar vacío.", variant: "destructive" });
       return;
     }
     const numTeams = parseInt(numTeamsForStage);
-    if (selectedTeamIdsForStage.length !== numTeams) {
-      toast({ title: "Error", description: `Debe seleccionar exactamente ${numTeams} equipos.`, variant: "destructive" });
+    const assignedTeams = slotAssignments.filter(id => id && id !== ''); // Get only non-empty assigned teams
+    
+    if (assignedTeams.length !== numTeams) {
+      toast({ title: "Error", description: `Debe asignar exactamente ${numTeams} equipos a las llaves. Asignados: ${assignedTeams.length}.`, variant: "destructive" });
       return;
     }
-    setupKnockoutStage(newStageName.trim(), numTeams, selectedTeamIdsForStage);
+    // Check for duplicates in assigned teams (excluding empty slots)
+    const uniqueAssignedTeams = new Set(assignedTeams);
+    if (uniqueAssignedTeams.size !== assignedTeams.length) {
+      toast({ title: "Error", description: "No puede asignar el mismo equipo a múltiples llaves.", variant: "destructive" });
+      return;
+    }
+
+    // Pass the slotAssignments directly as they are already in the desired order
+    setupKnockoutStage(newStageName.trim(), numTeams, slotAssignments); 
     toast({ title: "Fase Eliminatoria Creada", description: `La fase "${newStageName.trim()}" ha sido configurada.` });
     setNewStageName('');
-    setSelectedTeamIdsForStage([]);
-    setNumTeamsForStage("8");
+    setSlotAssignments(Array(parseInt(numTeamsForStage)).fill('')); // Reset for next setup
   };
   
   const champion = useMemo(() => {
@@ -192,6 +301,21 @@ export default function KnockoutSection() {
     }
   };
 
+  // Handler for when a team is selected for a slot
+  const handleSlotAssignmentChange = (index: number, teamId: string) => {
+    const newAssignments = [...slotAssignments];
+    
+    // If the selected teamId is already assigned to another slot, clear that other slot
+    if (teamId !== '') { // Only if a team is actually selected (not '-- Vacío --')
+      const existingIndexForSelectedTeam = newAssignments.findIndex((id, i) => id === teamId && i !== index);
+      if (existingIndexForSelectedTeam !== -1) {
+        newAssignments[existingIndexForSelectedTeam] = ''; // Clear the old slot
+      }
+    }
+    newAssignments[index] = teamId; // Assign to the current slot
+    setSlotAssignments(newAssignments);
+  };
+
 
   if (!knockoutStage && isAdmin) {
     return (
@@ -208,39 +332,67 @@ export default function KnockoutSection() {
           </div>
           <div>
             <Label htmlFor="numTeamsStage">Número de Equipos</Label>
-            <Select value={numTeamsForStage} onValueChange={setNumTeamsForStage}>
+            <Select 
+              value={numTeamsForStage} 
+              onValueChange={(value) => {
+                setNumTeamsForStage(value);
+                // No need to reset selectedTeamIdsForStage as it's replaced by slotAssignments
+              }}
+            >
               <SelectTrigger id="numTeamsStage"><SelectValue placeholder="Seleccionar número" /></SelectTrigger>
               <SelectContent>
                 {powerOfTwoOptions.map(opt => <SelectItem key={opt} value={String(opt)}>{opt} equipos</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Equipos Participantes ({selectedTeamIdsForStage.length} / {numTeamsForStage})</Label>
-            <ScrollArea className="h-40 border rounded-md p-2">
-              {teams.map(team => (
-                <div key={team.id} className="flex items-center space-x-2 mb-1">
-                  <input 
-                    type="checkbox" 
-                    id={`team-${team.id}-knockout`} 
-                    checked={selectedTeamIdsForStage.includes(team.id)}
-                    onChange={() => {
-                      setSelectedTeamIdsForStage(prev => 
-                        prev.includes(team.id) ? prev.filter(id => id !== team.id) : [...prev, team.id]
-                      )
-                    }}
-                    disabled={selectedTeamIdsForStage.length >= parseInt(numTeamsForStage) && !selectedTeamIdsForStage.includes(team.id)}
-                  />
-                  <Label htmlFor={`team-${team.id}-knockout`}>{team.name}</Label>
+          
+          {parseInt(numTeamsForStage) > 0 && teams.length > 0 && (
+            <div className="space-y-3 mt-4">
+              <Label className="font-semibold text-md flex items-center"><ListOrdered className="mr-2 h-5 w-5 text-primary"/>Asignar Equipos a las Llaves:</Label>
+              <p className="text-xs text-muted-foreground">El orden aquí define los enfrentamientos. Llave 1 vs Llave 2, Llave 3 vs Llave 4, etc.</p>
+              <ScrollArea className="h-60 border rounded-md p-3">
+              {Array.from({ length: parseInt(numTeamsForStage) }).map((_, index) => (
+                <div key={`slot-${index}`} className="flex items-center space-x-3 mb-3">
+                  <Label htmlFor={`slot-select-${index}`} className="w-24 text-sm">Llave {index + 1}:</Label>
+                  <Select
+                    value={slotAssignments[index] || ''}
+                    onValueChange={(teamId) => handleSlotAssignmentChange(index, teamId)}
+                  >
+                    <SelectTrigger id={`slot-select-${index}`} className="flex-grow">
+                      <SelectValue placeholder="Seleccionar equipo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">-- Vacío --</SelectItem>
+                      {teams.map(team => (
+                          // No need to disable options here, handleSlotAssignmentChange handles de-duplication logic
+                          <SelectItem key={team.id} value={team.id}> 
+                            {team.name}
+                          </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               ))}
-              {teams.length === 0 && <p className="text-sm text-muted-foreground p-2">No hay equipos creados. Ve a la pestaña 'Equipos'.</p>}
-               {teams.length < parseInt(numTeamsForStage) && <p className="text-sm text-destructive p-2">No hay suficientes equipos creados para una fase de {numTeamsForStage}.</p>}
-            </ScrollArea>
-          </div>
+              </ScrollArea>
+            </div>
+          )}
+           {teams.length === 0 && <p className="text-sm text-muted-foreground p-2 text-center">No hay equipos creados. Ve a la pestaña 'Equipos'.</p>}
+           {teams.length > 0 && teams.length < parseInt(numTeamsForStage) && <p className="text-sm text-destructive p-2 text-center">No hay suficientes equipos creados para una fase de {numTeamsForStage}. Necesitas {parseInt(numTeamsForStage) - teams.length} más.</p>}
+
         </CardContent>
         <CardFooter>
-          <Button onClick={handleSetupStage} disabled={teams.length < parseInt(numTeamsForStage) || parseInt(numTeamsForStage) < 2}><PlusCircle className="mr-2 h-4 w-4" />Crear Fase</Button>
+          <Button 
+            onClick={handleSetupStage} 
+            disabled={
+              !newStageName.trim() ||
+              teams.length < parseInt(numTeamsForStage) || 
+              parseInt(numTeamsForStage) < 2 ||
+              slotAssignments.filter(id => id && id !== '').length !== parseInt(numTeamsForStage) || // Ensure all slots are filled
+              new Set(slotAssignments.filter(id => id && id !== '')).size !== slotAssignments.filter(id => id && id !== '').length // Ensure no duplicates among filled slots
+            }
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />Crear Fase
+          </Button>
         </CardFooter>
       </Card>
     );
@@ -313,7 +465,7 @@ export default function KnockoutSection() {
         <CardHeader><CardTitle>Bracket de Eliminatorias</CardTitle></CardHeader>
         <CardContent id="knockout-bracket-export-area" className="bg-card">
           <ScrollArea className="pb-4">
-            <div className="flex space-x-8 overflow-x-auto p-4"> {/* Added p-4 for padding during export */}
+            <div className="flex space-x-8 overflow-x-auto p-4"> 
               {knockoutStage.rounds.map((round, roundIndex) => (
                 <div key={round.id} className="flex flex-col items-center space-y-6 min-w-max">
                   <h3 className="text-lg font-semibold text-center sticky top-0 bg-background/80 backdrop-blur-sm py-2 px-4 rounded-md z-10">{round.name}</h3>
@@ -324,8 +476,10 @@ export default function KnockoutSection() {
                           match={match}
                           roundName={round.name}
                           isAdmin={isAdmin}
+                          allTeams={teams}
                           getTeamName={(id) => getTeamById(id)?.name || 'N/A'}
-                          onSaveScore={handleSaveKnockoutScore(round.id)}
+                          onSaveScore={handleSaveKnockoutScoreInternal(round.id)}
+                          onSaveTeamChanges={handleSaveKnockoutTeamChanges(round.id)}
                           initialScoreA={matchScoresInput[match.id]?.scoreA ?? ''}
                           initialScoreB={matchScoresInput[match.id]?.scoreB ?? ''}
                         />
