@@ -11,16 +11,16 @@ export interface Match {
   teamBId: string;
   scoreA?: number;
   scoreB?: number;
-  roundName?: string; 
+  roundName?: string;
   played: boolean;
 }
 
 export interface ClassificationZone {
-  id: string;
+  id:string;
   name: string;
   rankMin: number;
   rankMax: number;
-  colorClass: string; 
+  colorClass: string;
 }
 
 export interface Standing {
@@ -34,8 +34,8 @@ export interface Standing {
   goalDifference: number;
   points: number;
   rank?: number;
-  classificationZoneName?: string; 
-  zoneColorClass?: string; 
+  classificationZoneName?: string;
+  zoneColorClass?: string;
 }
 
 export interface Group {
@@ -54,7 +54,7 @@ export interface League {
   teamIds: string[];
   matches: Match[];
   settings: {
-    rounds: 1 | 2; 
+    rounds: 1 | 2;
   };
   classificationZones: ClassificationZone[];
   matchGenerationMode: 'automatic' | 'manual'; // Added for league
@@ -62,7 +62,7 @@ export interface League {
 
 export interface KnockoutRound {
   id: string;
-  name: string; 
+  name: string;
   matches: Match[];
 }
 
@@ -70,12 +70,21 @@ export interface KnockoutStage {
   id: string;
   name: string;
   numTeams: number; // Must be a power of 2, e.g., 4, 8, 16
-  teamIds: string[]; // Initial teams participating
+  teamIds: string[]; // Initial teams participating, in order of assignment
   rounds: KnockoutRound[];
   championId?: string;
 }
 
 export type AppTheme = 'light' | 'dark' | 'system';
+
+export interface ArchivedWinner {
+  id: string;
+  tournamentName: string;
+  championTeamId: string;
+  championTeamName: string;
+  dateArchived: string; // ISO string date
+  type: 'Liga' | 'Eliminatoria';
+}
 
 export interface TournamentDataState {
   teams: Team[];
@@ -84,7 +93,8 @@ export interface TournamentDataState {
   knockoutStage: KnockoutStage | null;
   isAdmin: boolean;
   theme: AppTheme;
-  selectedGroupIdsForExport: string[]; // New: For multi-group export
+  selectedGroupIdsForExport: string[];
+  archivedWinners: ArchivedWinner[]; // New state for historical winners
 }
 
 export interface RandomGroupDistributionConfig {
@@ -108,18 +118,18 @@ export interface TournamentActions {
   addTeam: (name: string) => void;
   editTeam: (id: string, newName: string) => void;
   deleteTeam: (id: string) => void;
-  
+
   // Groups
-  createGroup: (name: string, matchGenerationMode?: 'automatic' | 'manual', rounds?: 1 | 2) => string; 
+  createGroup: (name: string, matchGenerationMode?: 'automatic' | 'manual', rounds?: 1 | 2) => string;
   deleteGroup: (groupId: string) => void;
   addTeamToGroup: (groupId: string, teamId: string) => void;
   removeTeamFromGroup: (groupId: string, teamId: string) => void;
-  
+
   distributeTeamsRandomlyToGroups: (config: RandomGroupDistributionConfig) => void;
   setGroupMatchGenerationMode: (groupId: string, mode: 'automatic' | 'manual') => void;
   setGroupRounds: (groupId: string, rounds: 1 | 2) => void;
   clearGroupMatches: (groupId: string) => void;
-  generateGroupMatches: (groupId: string) => void; 
+  generateGroupMatches: (groupId: string) => void;
   addManualMatchToGroup: (groupId: string, teamAId: string, teamBId: string) => void;
   removeManualMatchFromGroup: (groupId: string, matchId: string) => void;
 
@@ -128,31 +138,37 @@ export interface TournamentActions {
   removeGroupClassificationZone: (groupId: string, zoneId: string) => void;
 
   // League
-  setupLeague: (name: string, teamIds: string[], rounds: 1 | 2, matchGenerationMode?: 'automatic' | 'manual') => void; // Added matchGenerationMode
+  setupLeague: (name: string, teamIds: string[], rounds: 1 | 2, matchGenerationMode?: 'automatic' | 'manual') => void;
   deleteLeague: () => void;
-  generateLeagueMatches: () => void; // Will respect matchGenerationMode
+  generateLeagueMatches: () => void;
   updateLeagueMatchScore: (matchId: string, scoreA: number, scoreB: number) => void;
   addLeagueClassificationZone: (zone: Omit<ClassificationZone, 'id'>) => void;
   removeLeagueClassificationZone: (zoneId: string) => void;
-  setLeagueMatchGenerationMode: (mode: 'automatic' | 'manual') => void; // New
-  addManualMatchToLeague: (teamAId: string, teamBId: string) => void; // New
-  removeManualMatchFromLeague: (matchId: string) => void; // New
-  clearLeagueMatches: () => void; // New
-  setLeagueRounds: (rounds: 1 | 2) => void; // New, for automatic mode config
+  setLeagueMatchGenerationMode: (mode: 'automatic' | 'manual') => void;
+  addManualMatchToLeague: (teamAId: string, teamBId: string) => void;
+  removeManualMatchFromLeague: (matchId: string) => void;
+  clearLeagueMatches: () => void;
+  setLeagueRounds: (rounds: 1 | 2) => void;
 
   // Knockout
-  setupKnockoutStage: (name: string, numTeams: number, teamIds: string[]) => void;
+  setupKnockoutStage: (name: string, numTeams: number, teamIdsInOrder: string[]) => void;
   deleteKnockoutStage: () => void;
-  updateKnockoutMatchScore: (roundId: string, matchId: string, scoreA: number, scoreB: number) => void; 
-  
+  updateKnockoutMatchScore: (roundId: string, matchId: string, scoreA: number, scoreB: number) => void;
+  updateKnockoutMatchTeams: (roundId: string, matchId: string, newTeamAId: string, newTeamBId: string) => void;
+
   // Utility
   getTeamById: (teamId: string) => Team | undefined;
   getGroupStandings: (groupId: string) => Standing[];
   getLeagueStandings: () => Standing[];
 
-  // Export Selection (New)
+  // Export Selection
   toggleSelectGroupForExport: (groupId: string) => void;
   clearSelectedGroupsForExport: () => void;
+
+  // Archived Winners
+  addArchivedWinner: (winnerData: { tournamentName: string; championTeamId: string; type: 'Liga' | 'Eliminatoria' }) => void;
+  deleteArchivedWinner: (winnerId: string) => void;
+  getArchivedWinners: () => ArchivedWinner[];
 }
 
 export type StoreState = TournamentDataState & TournamentActions;
