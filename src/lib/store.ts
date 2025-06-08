@@ -796,7 +796,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
       type: winnerData.type,
     };
     set((state: StoreState) => ({
-      archivedWinners: [newArchivedWinner, ...state.archivedWinners].sort((a,b) => new Date(b.dateArchived).getTime() - new Date(a.dateArchived).getTime()),
+      archivedWinners: [...state.archivedWinners, newArchivedWinner].sort((a,b) => new Date(a.dateArchived).getTime() - new Date(b.dateArchived).getTime()),
     }));
   },
   deleteArchivedWinner: (winnerId: string) => {
@@ -806,7 +806,7 @@ const tournamentActions = (set: any, get: any): Omit<StoreState, keyof typeof in
     }));
   },
   getArchivedWinners: () => {
-    return get().archivedWinners.sort((a,b) => new Date(b.dateArchived).getTime() - new Date(a.dateArchived).getTime());
+    return get().archivedWinners.sort((a,b) => new Date(a.dateArchived).getTime() - new Date(b.dateArchived).getTime());
   },
 });
 
@@ -856,7 +856,7 @@ export const useTournamentStore = create<StoreState>()(
                 hydratedState.archivedWinners = hydratedState.archivedWinners.map((aw: ArchivedWinner) => ({
                     ...aw,
                     dateArchived: typeof aw.dateArchived === 'string' ? aw.dateArchived : new Date(aw.dateArchived).toISOString(),
-                })).sort((a: ArchivedWinner, b: ArchivedWinner) => new Date(b.dateArchived).getTime() - new Date(a.dateArchived).getTime());
+                })).sort((a: ArchivedWinner, b: ArchivedWinner) => new Date(a.dateArchived).getTime() - new Date(b.dateArchived).getTime());
               }
             }
           }
